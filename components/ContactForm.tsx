@@ -27,7 +27,6 @@ export function ContactForm({ sectorOptions, inboxEmail, whatsappHref }: Contact
   const [status, setStatus] = useState<Status>("idle");
   const [errors, setErrors] = useState<EnquiryErrors>({});
   const [errorMessage, setErrorMessage] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
   const sectorRef = useRef<HTMLSelectElement>(null);
   const confirmationRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<Status>("idle");
@@ -48,12 +47,10 @@ export function ContactForm({ sectorOptions, inboxEmail, whatsappHref }: Contact
 
   // The page is kept alive (hidden) after navigating away; clear a finished
   // enquiry so returning visitors see a fresh form, not a stale confirmation.
+  // (The form is unmounted while the confirmation shows, so it remounts empty.)
   useLayoutEffect(() => {
     return () => {
-      if (statusRef.current === "handoff" || statusRef.current === "sent") {
-        formRef.current?.reset();
-        setStatus("idle");
-      }
+      if (statusRef.current === "handoff" || statusRef.current === "sent") setStatus("idle");
     };
   }, []);
 
@@ -94,7 +91,6 @@ export function ContactForm({ sectorOptions, inboxEmail, whatsappHref }: Contact
   }
 
   function startOver() {
-    formRef.current?.reset();
     setErrors({});
     setStatus("idle");
   }
@@ -164,7 +160,7 @@ export function ContactForm({ sectorOptions, inboxEmail, whatsappHref }: Contact
     [hint, errors[field] ? `${field}-error` : null].filter(Boolean).join(" ") || undefined;
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} noValidate className="grid gap-5 sm:grid-cols-2">
+    <form onSubmit={handleSubmit} noValidate className="grid gap-5 sm:grid-cols-2">
       <Field label="Full name" name="name" error={errors.name} required>
         <input
           id="name"
