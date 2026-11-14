@@ -22,7 +22,7 @@ async function CopyrightYear() {
 }
 
 const footerLink =
-  "inline-flex min-h-11 items-center text-on-navy transition-colors hover:text-gold sm:min-h-9";
+  "inline-flex min-h-11 items-center text-on-navy transition-colors hover:text-gold";
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return <h2 className="font-display text-[1.0625rem] font-bold text-white">{children}</h2>;
@@ -97,7 +97,7 @@ export function SiteFooter() {
                 <li>
                   <a
                     href={`mailto:${company.email}`}
-                    className="inline-block py-2.5 text-gold transition-colors hover:text-white sm:py-1.5"
+                    className="inline-block py-2.5 text-gold transition-colors hover:text-white"
                   >
                     <EmailText email={company.email} />
                   </a>

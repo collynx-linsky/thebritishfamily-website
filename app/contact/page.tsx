@@ -52,7 +52,7 @@ function DetailBlock({
 }
 
 const detailLink =
-  "inline-flex min-h-11 w-fit items-center text-on-navy transition-colors hover:text-gold sm:min-h-9";
+  "inline-flex min-h-11 w-fit items-center text-on-navy transition-colors hover:text-gold";
 
 export default function ContactPage() {
   const { address } = company;
@@ -72,7 +72,7 @@ export default function ContactPage() {
           {/* Contact details */}
           <aside
             aria-labelledby="details-title"
-            className="on-dark flex flex-col gap-8 self-start rounded-lg bg-navy p-7 text-white md:p-9"
+            className="on-dark flex min-w-0 flex-col gap-8 self-start rounded-lg bg-navy p-7 text-white md:p-9"
           >
             <h2 id="details-title" className="text-2xl font-extrabold">
               Contact details
@@ -135,7 +135,7 @@ export default function ContactPage() {
           <section
             id="enquiry"
             aria-labelledby="enquiry-title"
-            className="scroll-mt-28 rounded-lg bg-white p-7 shadow-card md:p-10"
+            className="min-w-0 scroll-mt-28 rounded-lg bg-white p-7 shadow-card md:p-10"
           >
             <p className="eyebrow text-amber-ink">Enquiry form</p>
             <h2 id="enquiry-title" className="mt-2 text-section font-extrabold text-navy">

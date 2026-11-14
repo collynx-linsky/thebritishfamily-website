@@ -43,3 +43,4 @@ next-env.d.ts
 
 # local responsive preview harness
 /public/_preview.html
+/public/_audit.js

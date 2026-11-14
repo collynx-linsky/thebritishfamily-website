@@ -48,7 +48,7 @@ export function PageBanner({
                   {crumb.href && !last ? (
                     <Link
                       href={crumb.href}
-                      className="inline-flex min-h-11 items-center transition-colors hover:text-gold sm:min-h-8"
+                      className="inline-flex min-h-11 items-center transition-colors hover:text-gold"
                     >
                       {crumb.label}
                     </Link>
