@@ -1,26 +1,158 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ------------------------------------------------------------------
+   Design tokens. Every colour, font, shadow and type size used by the
+   site is defined here once; components only use the generated
+   utilities (bg-navy, text-muted, shadow-card, text-section, ...).
+   ------------------------------------------------------------------ */
+@theme {
+  /* Brand palette (from the BFL logo and the approved design) */
+  --color-navy: #1e3a6e;
+  --color-navy-deep: #14274d;
+  --color-navy-soft: #284a87;
+  --color-navy-line: #2c416b;
+  --color-gold: #f7a529;
+  --color-gold-bright: #ffb648; /* hover state for gold buttons */
+  --color-gold-deep: #c77700;
+  --color-amber-ink: #8a5200;
+  --color-ink: #14213d;
+  --color-muted: #46536b;
+  --color-mist: #f3f6fb;
+  --color-line: #e3e8f1;
+  /* Body text on navy backgrounds (passes AA on navy, navy-soft and navy-deep) */
+  --color-on-navy: #d9e1f0;
+
+  /* Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  --text-hero: clamp(2.375rem, 5.2vw, 4.25rem);
+  --text-hero--line-height: 1.05;
+  --text-banner: clamp(2.125rem, 4vw, 3.25rem);
+  --text-banner--line-height: 1.08;
+  --text-section: clamp(1.875rem, 3vw, 2.625rem);
+  --text-section--line-height: 1.12;
+  --text-cta: clamp(1.625rem, 2.6vw, 2.25rem);
+  --text-cta--line-height: 1.15;
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--letter-spacing: 0.14em;
+
+  /* Layout */
+  --container-site: 75rem; /* 1200px content width, used by max-w-site */
+
+  /* Elevation */
+  --shadow-card: 0 10px 30px rgb(20 33 61 / 0.08);
+  --shadow-lift: 0 18px 40px rgb(20 33 61 / 0.14);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Focus ring colour; dark sections override this to gold. */
+    --focus-ring: var(--color-navy);
+    scroll-padding-top: 6rem; /* keep anchored content clear of the sticky header */
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #fff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-gold);
+    color: var(--color-ink);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Sections on navy: gold focus ring stays visible against the dark background. */
+@utility on-dark {
+  --focus-ring: var(--color-gold);
+}
+
+/* Small uppercase label above headings. */
+@utility eyebrow {
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  letter-spacing: var(--text-eyebrow--letter-spacing);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------
+   Motion. Progressive enhancement with CSS scroll-driven animations:
+   no JavaScript, nothing hidden before hydration, and browsers without
+   support (or users who prefer reduced motion) see static content.
+   ------------------------------------------------------------------ */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes header-raise {
+  to {
+    box-shadow: 0 6px 24px rgb(20 33 61 / 0.1);
+    border-bottom-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .header-raise {
+      animation: header-raise linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 120px;
+    }
+  }
 }
