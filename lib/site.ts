@@ -21,7 +21,6 @@ export type IconName =
   | "menu"
   | "close"
   | "users"
-  | "handshake"
   | "tag"
   | "truck"
   | "spark"
@@ -217,7 +216,7 @@ export const approach: ApproachItem[] = [
   },
   {
     title: "Partnerships and direct engagement",
-    icon: "handshake",
+    icon: "users",
     description:
       "We reach clients through direct marketing, strategic partnerships, digital platforms, exhibitions and professional networking.",
   },
@@ -379,7 +378,7 @@ export type Fact = { value: string; label: string; icon?: IconName };
 export const facts: Fact[] = [
   { value: "2019", label: "Year established" },
   { value: "4", label: "Core business sectors" },
-  { value: "2", label: "Directors leading the company" },
+  { value: "2", label: "Directors leading the company" }, // keep in step with `leaders`
   { value: "", label: "Headquartered in Dar es Salaam", icon: "pin" },
 ];
 

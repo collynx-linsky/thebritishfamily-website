@@ -186,11 +186,14 @@ export function ArrowLink({
   children,
   tone = "navy",
   className = "",
+  prefetch,
 }: {
   href: string;
   children: React.ReactNode;
   tone?: "navy" | "white" | "gold";
   className?: string;
+  /** true resolves URL-specific content at prefetch time (Partial Prefetching) */
+  prefetch?: boolean;
 }) {
   const toneClass = {
     navy: "text-navy hover:text-navy-deep",
@@ -201,6 +204,7 @@ export function ArrowLink({
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       className={`group inline-flex min-h-11 items-center gap-2 font-bold transition-colors ${toneClass} ${className}`}
     >
       <span className="underline decoration-transparent decoration-2 underline-offset-4 transition-colors group-hover:decoration-current">
@@ -220,7 +224,7 @@ export function ArrowLink({
 export function CheckDot({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-gold text-ink ${className}`}
+      className={`inline-flex size-5.5 shrink-0 items-center justify-center rounded-full bg-gold text-ink ${className}`}
     >
       <Icon name="check" size={12} strokeWidth={3.5} />
     </span>

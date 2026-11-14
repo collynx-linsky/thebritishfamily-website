@@ -70,7 +70,7 @@ export function SiteFooter() {
             <ul className="flex flex-col">
               {sectors.map((sector) => (
                 <li key={sector.slug}>
-                  <Link href={sectorHref(sector)} className={footerLink}>
+                  <Link href={sectorHref(sector)} prefetch className={footerLink}>
                     {sector.shortName}
                   </Link>
                 </li>

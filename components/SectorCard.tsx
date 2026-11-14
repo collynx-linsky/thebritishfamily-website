@@ -25,6 +25,7 @@ export function SectorCard({
         <Heading className="mt-1 text-xl leading-[1.2] font-bold text-navy">
           <Link
             href={sectorHref(sector)}
+            prefetch
             className="rounded-sm after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {sector.shortName}
