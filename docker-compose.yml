@@ -1,0 +1,24 @@
+# Local development database only. Production uses Neon (see README).
+# Start: npm run db:up    Stop: npm run db:down
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: bfl-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bfl
+      POSTGRES_PASSWORD: bfl_local_dev
+      POSTGRES_DB: bfl
+    ports:
+      # 5433 on the host, to avoid clashing with any Postgres already on 5432
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - bfl-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bfl -d bfl"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  bfl-pgdata:

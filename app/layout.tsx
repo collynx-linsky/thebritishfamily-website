@@ -2,9 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Inter } from "next/font/google";
 import { company } from "@/lib/site";
 import { siteUrl } from "@/lib/seo";
-import { SiteFooter } from "@/components/SiteFooter";
-import { SiteHeader } from "@/components/SiteHeader";
-import { TopBar } from "@/components/TopBar";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -21,11 +18,10 @@ const inter = Inter({
 });
 
 /**
- * Every route must be fully prerendered at build time. If a future change
- * introduces request-time rendering anywhere, `next build` fails.
+ * Root layout: document, fonts and site-wide metadata only.
+ * The public chrome (and the "every public page is static" rule) lives in
+ * app/(site)/layout.tsx; the admin area has its own layout in app/(admin).
  */
-export const ensureStatic = "navigation";
-
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -49,19 +45,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en-GB" className={`${archivo.variable} ${inter.variable}`}>
-      <body className="flex min-h-dvh flex-col">
-        <a
-          href="#main"
-          className="fixed top-3 left-3 z-100 -translate-y-24 rounded-sm bg-gold px-5 py-3 font-bold text-ink shadow-lift transition-transform focus:translate-y-0"
-        >
-          Skip to main content
-        </a>
-        <TopBar />
-        <SiteHeader />
-        <div className="flex-1">{children}</div>
-        <SiteFooter />
-      </body>
+    // data-scroll-behavior: Next.js disables the CSS smooth scrolling during route transitions
+    <html
+      lang="en-GB"
+      data-scroll-behavior="smooth"
+      className={`${archivo.variable} ${inter.variable}`}
+    >
+      <body className="flex min-h-dvh flex-col">{children}</body>
     </html>
   );
 }

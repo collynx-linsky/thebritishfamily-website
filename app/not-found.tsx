@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Icon } from "@/components/Icon";
+import { SiteChrome } from "@/components/SiteChrome";
 import { ArrowLink, ButtonLink, Container } from "@/components/ui";
 import { navigation, sectorHref, sectors } from "@/lib/site";
 
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
+    <SiteChrome>
     <main id="main" className="bg-mist">
       <Container className="grid items-center gap-12 py-20 md:py-28 lg:grid-cols-[1fr_auto] lg:gap-20">
         <div className="flex max-w-2xl flex-col items-start gap-5">
@@ -73,5 +75,6 @@ export default function NotFound() {
         </div>
       </Container>
     </main>
+    </SiteChrome>
   );
 }
