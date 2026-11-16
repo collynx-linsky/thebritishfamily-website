@@ -5,6 +5,7 @@
  * No server-only import: also used by the seed and reset scripts.
  */
 import { hash, verify } from "@node-rs/argon2";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "./password-rules";
 
 const OPTIONS = {
   algorithm: 2, // Argon2id
@@ -13,8 +14,7 @@ const OPTIONS = {
   parallelism: 1,
 } as const;
 
-export const MIN_PASSWORD_LENGTH = 12;
-export const MAX_PASSWORD_LENGTH = 128;
+export { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH };
 
 export function hashPassword(password: string): Promise<string> {
   return hash(password, OPTIONS);

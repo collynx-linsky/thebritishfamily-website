@@ -10,6 +10,7 @@
 import "server-only";
 import { and, eq, gt, ne } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { cache } from "react";
 import { requireDb, schema } from "../db";
 import { newSessionToken, sha256 } from "./tokens";
@@ -47,6 +48,9 @@ export async function createSession(userId: number): Promise<void> {
  * refused immediately.
  */
 export const getSession = cache(async (): Promise<AdminSession | null> => {
+  // Session checks are always per request; this also lets the code below
+  // read the current time (Cache Components requires it to be request-time)
+  await connection();
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token || token.length > 100) return null;
 

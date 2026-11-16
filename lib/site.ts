@@ -35,7 +35,12 @@ export type IconName =
   | "download"
   | "calendar"
   | "news"
-  | "link";
+  | "link"
+  | "home"
+  | "image"
+  | "key"
+  | "search"
+  | "external";
 
 export type ImageAsset = {
   src: string;

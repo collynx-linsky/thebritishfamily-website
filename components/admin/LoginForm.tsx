@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import { useHydrated } from "./useHydrated";
 import { login, type LoginState } from "@/lib/admin/actions/auth";
 
 export function LoginForm({ next, signedOut }: { next?: string; signedOut?: boolean }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, {});
+  const hydrated = useHydrated();
 
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
@@ -55,7 +57,7 @@ export function LoginForm({ next, signedOut }: { next?: string; signedOut?: bool
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !hydrated}
         className="mt-1 inline-flex min-h-12 items-center justify-center rounded-sm bg-navy px-6 font-bold text-white transition-colors hover:bg-navy-deep disabled:cursor-wait disabled:opacity-70"
       >
         {pending ? "Signing in…" : "Sign in"}

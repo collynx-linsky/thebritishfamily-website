@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { AdminNav } from "@/components/admin/AdminNav";
 import { logout } from "@/lib/admin/actions/auth";
+import { ACCOUNT_AREA, ADMIN_AREAS } from "@/lib/admin/areas";
 import { verifySession } from "@/lib/auth/dal";
 import { company } from "@/lib/site";
 
@@ -55,7 +57,18 @@ async function AuthenticatedShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <div className="flex-1">{children}</div>
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-5 py-6 lg:flex-row lg:gap-10 lg:py-10">
+        <aside className="lg:sticky lg:top-6 lg:w-56 lg:shrink-0 lg:self-start">
+          <AdminNav
+            items={[
+              { href: "/admin", label: "Dashboard", icon: "spark" },
+              ...ADMIN_AREAS.map((a) => ({ href: a.href, label: a.label, icon: a.icon })),
+            ]}
+            account={{ href: ACCOUNT_AREA.href, label: ACCOUNT_AREA.label, icon: ACCOUNT_AREA.icon }}
+          />
+        </aside>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </>
   );
 }
