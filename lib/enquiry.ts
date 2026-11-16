@@ -7,7 +7,6 @@
  * to `activeTransport`. The form component does not need to change.
  */
 
-import { company } from "./site";
 
 export type Enquiry = {
   name: string;
@@ -31,7 +30,10 @@ export type EnquiryResult =
   | { status: "sent" }
   | { status: "error"; message: string };
 
-export type EnquiryTransport = (enquiry: Enquiry) => Promise<EnquiryResult>;
+/** Where enquiries go: the general inbox from the (edited) contact details */
+export type EnquiryContext = { inbox: string };
+
+export type EnquiryTransport = (enquiry: Enquiry, context: EnquiryContext) => Promise<EnquiryResult>;
 
 /* ------------------------------------------------------------------
    Validation (shared by the form today and a backend tomorrow)
@@ -58,7 +60,7 @@ export function validateEnquiry(enquiry: Enquiry): EnquiryErrors {
    Transports
    ------------------------------------------------------------------ */
 
-export function buildMailtoUrl(enquiry: Enquiry, to: string = company.email) {
+export function buildMailtoUrl(enquiry: Enquiry, to: string) {
   const subject = `Website enquiry: ${enquiry.sectorLabel} (${enquiry.name.trim()})`;
   const body = [
     `Name: ${enquiry.name.trim()}`,
@@ -74,9 +76,9 @@ export function buildMailtoUrl(enquiry: Enquiry, to: string = company.email) {
 }
 
 /** Opens the visitor's email app with the enquiry ready to send. */
-export const mailtoTransport: EnquiryTransport = async (enquiry) => {
+export const mailtoTransport: EnquiryTransport = async (enquiry, { inbox }) => {
   try {
-    window.location.href = buildMailtoUrl(enquiry);
+    window.location.href = buildMailtoUrl(enquiry, inbox);
     return { status: "handoff" };
   } catch {
     return { status: "error", message: "We could not open your email app." };
@@ -101,6 +103,6 @@ export const exampleApiTransport: EnquiryTransport = async (enquiry) => {
 /** Swap this to change how enquiries are delivered. */
 const activeTransport: EnquiryTransport = mailtoTransport;
 
-export function submitEnquiry(enquiry: Enquiry): Promise<EnquiryResult> {
-  return activeTransport(enquiry);
+export function submitEnquiry(enquiry: Enquiry, context: EnquiryContext): Promise<EnquiryResult> {
+  return activeTransport(enquiry, context);
 }

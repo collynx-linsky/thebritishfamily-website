@@ -9,18 +9,12 @@ import { PageBanner } from "@/components/PageBanner";
 import { SectorCard } from "@/components/SectorCard";
 import { ArrowLink, ButtonLink, Eyebrow, IconChip, Section, SectionHeading } from "@/components/ui";
 import { sectorImage, sectorPhotos } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import {
-  approach,
-  company,
-  getSector,
-  primaryPhone,
-  sectors,
-  telHref,
-  whatsappHref,
-} from "@/lib/site";
+import { metadataFor } from "@/lib/content/metadata";
+import { getAbout, getCompany, getSector, getSectors } from "@/lib/content/site-content";
+import { telHref, whatsappHref } from "@/lib/site";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const sectors = await getSectors();
   return sectors.map((sector) => ({ slug: sector.slug }));
 }
 
@@ -28,13 +22,9 @@ export async function generateMetadata({
   params,
 }: PageProps<"/sectors/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const sector = getSector(slug);
+  const [sector, company] = await Promise.all([getSector(slug), getCompany()]);
   if (!sector) return {};
-  return pageMetadata({
-    title: sector.name,
-    description: `${sector.summary} ${company.name}, Dar es Salaam, Tanzania.`,
-    path: `/sectors/${sector.slug}`,
-  });
+  return metadataFor(sector.name, `${sector.summary} ${company.name}, ${company.headquarters}.`, `/sectors/${sector.slug}`);
 }
 
 /**
@@ -85,8 +75,10 @@ const columnsFor: Record<number, string> = {
 
 async function SectorContent({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const sector = getSector(slug);
+  const [sector, sectors, company, about] = await Promise.all([getSector(slug), getSectors(), getCompany(), getAbout()]);
   if (!sector) notFound();
+  const { approach } = about;
+  const primaryPhone = company.phones[0];
 
   const others = sectors.filter((s) => s.slug !== sector.slug);
   const photos = sectorPhotos(sector);
@@ -236,7 +228,7 @@ async function SectorContent({ params }: { params: Promise<{ slug: string }> }) 
               {primaryPhone.display}
             </ButtonLink>
             <ButtonLink
-              href={whatsappHref(enquiryText)}
+              href={whatsappHref(company.whatsappE164, enquiryText)}
               variant="outline-light"
               icon="whatsapp"
               external

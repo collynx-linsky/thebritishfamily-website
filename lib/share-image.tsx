@@ -2,7 +2,8 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { shareImageSize } from "./seo";
-import { company, sectors } from "./site";
+import { getCompany, getSectors } from "./content/site-content";
+import { company as defaults } from "./site";
 
 // Brand colours (ImageResponse cannot read the CSS theme tokens).
 const NAVY = "#1E3A6E";
@@ -11,12 +12,13 @@ const GOLD = "#F7A529";
 const ON_NAVY = "#D9E1F0";
 
 const logoSrc = `data:image/png;base64,${await readFile(
-  join(process.cwd(), "public", company.logo.src),
+  join(process.cwd(), "public", defaults.logo.src),
   "base64",
 )}`;
 
-/** Branded 1200x630 share image used for Open Graph and Twitter cards. */
-export function renderShareImage() {
+/** Branded 1200x630 share image (from the edited company details and sectors). */
+export async function renderShareImage() {
+  const [company, sectors] = await Promise.all([getCompany(), getSectors()]);
   return new ImageResponse(
     (
       <div

@@ -1,5 +1,10 @@
 /**
- * All site content lives here, so text can be edited in one place.
+ * Built-in DEFAULT content for the site.
+ *
+ * Since the admin panel, the database is the source of truth: pages read
+ * content through lib/content/site-content.ts, which falls back to these
+ * defaults for anything missing, and `npm run db:seed` copies them into an
+ * empty database. Navigation and URL helpers here stay in code.
  *
  * Source of facts: docs/content.md (transcribed from the BFL company
  * profile). Do not add facts that are not in that file. Missing
@@ -126,14 +131,14 @@ export const company = {
   } satisfies ImageAsset,
 } as const;
 
-export const primaryPhone = company.phones[0];
-
 export const telHref = (phone: Phone) => `tel:+${phone.e164}`;
 
-export const whatsappHref = (message?: string) =>
-  `https://wa.me/${primaryPhone.e164}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
+/** WhatsApp chat link for a number in E.164 digits, with an optional message. */
+export const whatsappHref = (e164: string, message?: string) =>
+  `https://wa.me/${e164}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
 
-export const whatsappGreeting = `Hello ${company.name}, I would like to make an enquiry.`;
+export const whatsappGreeting = (companyName: string) =>
+  `Hello ${companyName}, I would like to make an enquiry.`;
 
 /* ------------------------------------------------------------------
    Navigation

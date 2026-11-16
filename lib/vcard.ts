@@ -1,11 +1,18 @@
 import { siteUrl } from "./seo";
-import { company } from "./site";
+import { company as defaultCompany } from "./site";
+
+type CardCompany = {
+  name: string;
+  phones: { e164: string }[];
+  email: string;
+  address: { poBox: string; street: string; city: string; country: string };
+};
 
 /** vCard 3.0 text values escape backslashes, commas and semicolons. */
 const esc = (value: string) => value.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;");
 
-/** The company's contact card, built from the content module. */
-export function contactCard(): string {
+/** The company's contact card, built from the (edited) company details. */
+export function contactCard(company: CardCompany = defaultCompany): string {
   const { address } = company;
   return [
     "BEGIN:VCARD",
@@ -21,4 +28,5 @@ export function contactCard(): string {
   ].join("\r\n");
 }
 
-export const contactCardBytes = () => new TextEncoder().encode(contactCard()).length;
+export const contactCardBytes = (company?: CardCompany) =>
+  new TextEncoder().encode(contactCard(company)).length;

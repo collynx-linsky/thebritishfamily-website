@@ -6,20 +6,16 @@ import { PageMotion } from "@/components/motion/PageMotion";
 import { PageBanner } from "@/components/PageBanner";
 import { ButtonLink, Container, Section, SectionHeading } from "@/components/ui";
 import { getDownloadsByCategory } from "@/lib/content/downloads";
-import { samples } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import { company, pages } from "@/lib/site";
+import { metadataForPage } from "@/lib/content/metadata";
+import { getCompany, getPages } from "@/lib/content/site-content";
 
-const page = pages.downloads;
-
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/downloads",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("downloads", "/downloads");
+}
 
 export default async function DownloadsPage() {
-  const groups = await getDownloadsByCategory();
+  const [groups, pages, company] = await Promise.all([getDownloadsByCategory(), getPages(), getCompany()]);
+  const page = pages.downloads;
   const total = groups.reduce((n, g) => n + g.items.length, 0);
 
   return (
@@ -30,7 +26,7 @@ export default async function DownloadsPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "Downloads" }]}
-          image={samples.logisticsBoxes}
+          image={page.bannerImage}
         />
 
         {/* Category quick links */}

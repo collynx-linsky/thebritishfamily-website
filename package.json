@@ -14,7 +14,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "drizzle-kit studio",
     "admin:reset-password": "tsx scripts/admin-reset-password.ts",
-    "admin:unlock": "tsx scripts/admin-unlock.ts"
+    "admin:unlock": "tsx scripts/admin-unlock.ts",
+    "content:check": "tsx scripts/check-content.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.2",

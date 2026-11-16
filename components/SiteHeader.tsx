@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { getCompany } from "@/lib/content/site-content";
 import {
   headerNavigation,
   navigation,
-  primaryPhone,
   quoteCta,
   telHref,
   whatsappGreeting,
@@ -13,7 +13,9 @@ import { MobileMenu } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
 import { buttonClasses, Container } from "./ui";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const company = await getCompany();
+  const primaryPhone = company.phones[0];
   return (
     <header className="header-raise sticky top-0 z-50 border-b border-line bg-white/95 backdrop-blur-md supports-backdrop-filter:bg-white/90">
       <Container className="flex min-h-20 items-center justify-between gap-6 py-2 lg:min-h-21">
@@ -34,7 +36,7 @@ export function SiteHeader() {
             items={navigation}
             quote={quoteCta}
             phone={{ display: primaryPhone.display, href: telHref(primaryPhone) }}
-            whatsappHref={whatsappHref(whatsappGreeting)}
+            whatsappHref={whatsappHref(company.whatsappE164, whatsappGreeting(company.name))}
           />
         </div>
       </Container>

@@ -1,11 +1,12 @@
-import { company, cta, primaryPhone, telHref } from "@/lib/site";
+import { getCompany, getHome } from "@/lib/content/site-content";
+import { telHref } from "@/lib/site";
 import { ButtonLink, Container } from "./ui";
 
 /** Gold call-to-action band shown above the footer. */
-export function CtaBand({
-  title = cta.title,
-  body = cta.body,
-  emailHref = `mailto:${company.email}`,
+export async function CtaBand({
+  title,
+  body,
+  emailHref,
   fx = false,
 }: {
   title?: string;
@@ -14,6 +15,12 @@ export function CtaBand({
   /** Premium buttons and a scroll reveal on the heading */
   fx?: boolean;
 }) {
+  const [company, home] = await Promise.all([getCompany(), getHome()]);
+  const { cta } = home;
+  const primaryPhone = company.phones[0];
+  title ??= cta.title;
+  body ??= cta.body;
+  emailHref ??= `mailto:${company.email}`;
   return (
     <section aria-labelledby="cta-title" className="bg-gold text-ink">
       <Container className="flex flex-col gap-6 py-12 md:flex-row md:items-center md:justify-between md:gap-12 md:py-14">

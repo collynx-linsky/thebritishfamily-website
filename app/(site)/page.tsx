@@ -23,40 +23,50 @@ import {
   Section,
   SectionHeading,
 } from "@/components/ui";
-import { heroSlides, homeGallery } from "@/lib/media";
 import { sectorImage } from "@/lib/samples";
 import { organizationJsonLd } from "@/lib/structured-data";
 import {
-  about,
-  company,
-  facts,
-  home,
-  leaders,
-  sectorHref,
-  sectors,
-  values,
-} from "@/lib/site";
+  getAbout,
+  getCompany,
+  getGallery,
+  getHeroSlides,
+  getHome,
+  getLeaders,
+  getSectors,
+} from "@/lib/content/site-content";
+import { sectorHref } from "@/lib/site";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const [managingDirector] = leaders;
-const mining = sectors.find((s) => s.slug === "mining-chemicals")!;
-const construction = sectors.find((s) => s.slug === "construction")!;
-const electronics = sectors.find((s) => s.slug === "electronics-appliances")!;
 
 /** Delay for staged reveals, as a CSS custom property */
 const delay = (ms: number) => ({ "--reveal-delay": `${ms}ms` }) as React.CSSProperties;
 const riseDelay = (ms: number) => ({ "--delay": `${ms}ms` }) as React.CSSProperties;
 
 export default async function HomePage() {
-  const { hero, highlights } = home;
-  const latestNews = await getLatestNews(3);
+  const [company, home, about, sectors, leaders, heroSlides, gallery, latestNews] = await Promise.all([
+    getCompany(),
+    getHome(),
+    getAbout(),
+    getSectors(),
+    getLeaders(),
+    getHeroSlides(),
+    getGallery(),
+    getLatestNews(3),
+  ]);
+  const { hero, highlights, facts } = home;
+  const { values } = about;
+  const [managingDirector] = leaders;
+  const mining = sectors.find((s) => s.slug === "mining-chemicals") ?? sectors[0];
+  const homeGallery = gallery
+    .filter((item) => item.showOnHome)
+    .map((item) => ({ image: item.image, sector: sectors.find((s) => s.slug === item.sectorSlug) ?? null }));
 
   return (
     <main id="main" tabIndex={-1} className="outline-none">
-      <JsonLd data={organizationJsonLd()} />
+      <JsonLd data={organizationJsonLd(company, sectors)} />
       <ScrollChrome focusTargetId="main" />
 
       <MotionRoot>
@@ -115,8 +125,8 @@ export default async function HomePage() {
               style={riseDelay(920)}
             >
               <Image
-                src={mining.image!.src}
-                alt={mining.image!.alt}
+                src={sectorImage(mining).src}
+                alt={sectorImage(mining).alt}
                 fill
                 sizes="(min-width: 1200px) 384px, (min-width: 768px) 33vw, 100vw"
                 className="object-cover transition-transform duration-700 ease-premium motion-safe:group-hover:scale-[1.06]"
@@ -158,8 +168,8 @@ export default async function HomePage() {
               >
                 <div className="parallax absolute inset-0">
                   <Image
-                    src={construction.image!.src}
-                    alt={construction.image!.alt}
+                    src={about.images.homeCollageTall.src}
+                    alt={about.images.homeCollageTall.alt}
                     fill
                     sizes="(min-width: 1024px) 300px, 58vw"
                     className="object-cover"
@@ -173,8 +183,8 @@ export default async function HomePage() {
               >
                 <div className="absolute inset-0">
                   <Image
-                    src={electronics.image!.src}
-                    alt={electronics.image!.alt}
+                    src={about.images.homeCollageSmall.src}
+                    alt={about.images.homeCollageSmall.alt}
                     fill
                     sizes="(min-width: 1024px) 260px, 50vw"
                     className="object-cover"

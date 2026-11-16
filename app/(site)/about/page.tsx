@@ -8,31 +8,28 @@ import { PageMotion } from "@/components/motion/PageMotion";
 import { RevealImage } from "@/components/motion/RevealImage";
 import { PageBanner } from "@/components/PageBanner";
 import { ArrowLink, ButtonLink, Container, Eyebrow, Section, SectionHeading } from "@/components/ui";
-import { bannerImages, samples } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import {
-  about,
-  approach,
-  company,
-  facts,
-  leaders,
-  pages,
-  sectorHref,
-  sectors,
-  values,
-} from "@/lib/site";
+import { metadataForPage } from "@/lib/content/metadata";
+import { getAbout, getCompany, getHome, getLeaders, getPages, getSectors } from "@/lib/content/site-content";
+import { sectorHref } from "@/lib/site";
 
-const page = pages.about;
-
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/about",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("about", "/about");
+}
 
 const delay = (ms: number) => ({ "--reveal-delay": `${ms}ms` }) as React.CSSProperties;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [about, company, home, leaders, pages, sectors] = await Promise.all([
+    getAbout(),
+    getCompany(),
+    getHome(),
+    getLeaders(),
+    getPages(),
+    getSectors(),
+  ]);
+  const page = pages.about;
+  const { values, approach, images } = about;
+  const { facts } = home;
   const [lead, ...rest] = about.introduction;
 
   return (
@@ -43,7 +40,7 @@ export default function AboutPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "About" }]}
-          image={bannerImages.about}
+          image={page.bannerImage}
         >
           <div className="mt-2 flex flex-wrap gap-3">
             <ButtonLink href="/sectors" fx>
@@ -83,7 +80,7 @@ export default function AboutPage() {
             <div className="flex flex-col gap-6">
               <div className="relative">
                 <RevealImage
-                  image={samples.teamMeeting}
+                  image={images.intro}
                   sizes="(min-width: 1024px) 460px, 100vw"
                   className="aspect-4/3"
                   parallax
@@ -171,7 +168,7 @@ export default function AboutPage() {
         >
           <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-35">
             <div className="parallax absolute inset-0">
-              <Image src={samples.miningOpenPit.src} alt="" fill sizes="100vw" className="object-cover" />
+              <Image src={images.missionBackground.src} alt="" fill sizes="100vw" className="object-cover" />
             </div>
           </div>
           <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-b from-navy/80 via-navy/65 to-navy/85" />
@@ -203,7 +200,7 @@ export default function AboutPage() {
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
             <div className="relative order-last lg:order-first">
               <RevealImage
-                image={samples.constructionCrane}
+                image={images.philosophy}
                 sizes="(min-width: 1024px) 560px, 100vw"
                 className="aspect-4/5 sm:aspect-4/3 lg:aspect-4/5"
                 parallax
@@ -266,7 +263,7 @@ export default function AboutPage() {
               />
             </div>
             <RevealImage
-              image={samples.logisticsBoxes}
+              image={images.approach}
               sizes="(min-width: 1024px) 420px, 100vw"
               className="hidden aspect-16/9 lg:block"
               decorative

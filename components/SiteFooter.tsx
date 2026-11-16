@@ -1,14 +1,7 @@
 import Link from "next/link";
 import { cacheLife } from "next/cache";
-import {
-  company,
-  navigation,
-  sectorHref,
-  sectors,
-  telHref,
-  whatsappGreeting,
-  whatsappHref,
-} from "@/lib/site";
+import { getCompany, getSectors } from "@/lib/content/site-content";
+import { navigation, sectorHref, telHref, whatsappGreeting, whatsappHref } from "@/lib/site";
 import { EmailText } from "./EmailText";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
@@ -28,7 +21,8 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
   return <h2 className="font-display text-[1.0625rem] font-bold text-white">{children}</h2>;
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const [company, sectors] = await Promise.all([getCompany(), getSectors()]);
   const { address } = company;
   return (
     <footer className="on-dark bg-navy-deep text-[0.9375rem] text-on-navy">
@@ -38,7 +32,7 @@ export function SiteFooter() {
             <Logo onDark size="sm" />
             <p className="max-w-88">{company.tagline}</p>
             <a
-              href={whatsappHref(whatsappGreeting)}
+              href={whatsappHref(company.whatsappE164, whatsappGreeting(company.name))}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-11 w-fit items-center gap-2 rounded-sm border border-navy-line px-4 font-semibold text-white transition-colors hover:border-gold hover:text-gold"

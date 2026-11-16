@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { company, primaryPhone, telHref } from "@/lib/site";
+import { getCompany } from "@/lib/content/site-content";
+import { telHref } from "@/lib/site";
 import { Container } from "./ui";
 import { Icon } from "./Icon";
 
-export function TopBar() {
+export async function TopBar() {
+  const company = await getCompany();
   const { address } = company;
+  const primaryPhone = company.phones[0];
   return (
     <div className="on-dark bg-navy text-sm text-on-navy">
       <Container className="flex min-h-11 items-center justify-between gap-x-8">

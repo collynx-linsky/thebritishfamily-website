@@ -6,33 +6,14 @@ import { PageMotion } from "@/components/motion/PageMotion";
 import { RevealImage } from "@/components/motion/RevealImage";
 import { PageBanner } from "@/components/PageBanner";
 import { ButtonLink, Container, Section } from "@/components/ui";
-import { bannerImages, samples } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import {
-  approach,
-  company,
-  leaders,
-  pages,
-  primaryPhone,
-  sectors,
-  telHref,
-  whatsappGreeting,
-  whatsappHref,
-  type IconName,
-} from "@/lib/site";
+import { metadataForPage } from "@/lib/content/metadata";
+import { getAbout, getCompany, getLeaders, getPages, getSectors } from "@/lib/content/site-content";
+import { telHref, whatsappGreeting, whatsappHref, type IconName } from "@/lib/site";
 
-const page = pages.contact;
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("contact", "/contact");
+}
 
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/contact",
-});
-
-const sectorOptions = [
-  ...sectors.map((s) => ({ value: s.slug, label: s.name })),
-  { value: "general", label: "General enquiry" },
-];
 
 function DetailBlock({
   icon,
@@ -59,9 +40,23 @@ function DetailBlock({
 const detailLink =
   "inline-flex min-h-11 w-fit items-center text-on-navy transition-colors hover:text-gold";
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const [about, company, leaders, pages, sectors] = await Promise.all([
+    getAbout(),
+    getCompany(),
+    getLeaders(),
+    getPages(),
+    getSectors(),
+  ]);
+  const page = pages.contact;
+  const { approach } = about;
   const { address } = company;
-  const whatsapp = whatsappHref(whatsappGreeting);
+  const primaryPhone = company.phones[0];
+  const whatsapp = whatsappHref(company.whatsappE164, whatsappGreeting(company.name));
+  const sectorOptions = [
+    ...sectors.map((s) => ({ value: s.slug, label: s.name })),
+    { value: "general", label: "General enquiry" },
+  ];
 
   const quickContacts: { icon: IconName; label: string; value: string; href: string; external?: boolean }[] = [
     { icon: "phone", label: "Call us", value: primaryPhone.display, href: telHref(primaryPhone) },
@@ -78,7 +73,7 @@ export default function ContactPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "Contact" }]}
-          image={bannerImages.contact}
+          image={page.bannerImage}
         />
 
         {/* Quick contact tiles, overlapping the banner */}
@@ -208,7 +203,7 @@ export default function ContactPage() {
           <Container>
             <div className="grid items-center gap-10 md:grid-cols-2 md:gap-14">
               <RevealImage
-                image={samples.logisticsBoxes}
+                image={about.images.approach}
                 sizes="(min-width: 768px) 560px, 100vw"
                 className="aspect-16/10"
                 parallax

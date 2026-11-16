@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { company } from "@/lib/site";
+import { getCompany } from "@/lib/content/site-content";
+import { company as defaults } from "@/lib/site";
 
-/** Logo mark with the two-line wordmark. */
-export function Logo({ onDark = false, size = "md" }: { onDark?: boolean; size?: "md" | "sm" }) {
+/** Logo mark (in code) with the two-line wordmark (editable company name). */
+export async function Logo({ onDark = false, size = "md" }: { onDark?: boolean; size?: "md" | "sm" }) {
+  const company = await getCompany();
   const mark = size === "md" ? { w: 68, h: 56 } : { w: 60, h: 50 };
   return (
     <Link
@@ -12,7 +14,7 @@ export function Logo({ onDark = false, size = "md" }: { onDark?: boolean; size?:
       aria-label={`${company.name}, home`}
     >
       <Image
-        src={company.logo.src}
+        src={defaults.logo.src}
         width={mark.w}
         height={mark.h}
         alt=""

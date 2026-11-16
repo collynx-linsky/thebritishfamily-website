@@ -149,7 +149,8 @@ export const PAGE_KEYS = ["about", "sectors", "leadership", "gallery", "news", "
 export type PageKey = (typeof PAGE_KEYS)[number];
 
 export const pagesSchema = z.object({
-  home: z.object({ title: text(90), description: text(200) }),
+  // The home description defaults to the company description, so it shares its limit
+  home: z.object({ title: text(90), description: text(260) }),
   ...Object.fromEntries(PAGE_KEYS.map((k) => [k, pageCopy])) as Record<PageKey, typeof pageCopy>,
 });
 

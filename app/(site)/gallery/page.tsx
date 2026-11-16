@@ -4,40 +4,39 @@ import { GalleryGrid, type GalleryGridPhoto } from "@/components/motion/GalleryG
 import { PageMotion } from "@/components/motion/PageMotion";
 import { PageBanner } from "@/components/PageBanner";
 import { ButtonLink, Section } from "@/components/ui";
-import { galleryPhotos } from "@/lib/media";
-import { bannerImages } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import { pages, sectors } from "@/lib/site";
+import { metadataForPage } from "@/lib/content/metadata";
+import { getGallery, getPages, getSectors } from "@/lib/content/site-content";
 
-const page = pages.gallery;
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("gallery", "/gallery");
+}
 
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/gallery",
-});
+export default async function GalleryPage() {
+  const [pages, sectors, gallery] = await Promise.all([getPages(), getSectors(), getGallery()]);
+  const page = pages.gallery;
 
-// Plain, serialisable data for the client component
-const photos: GalleryGridPhoto[] = galleryPhotos.map(({ image, sector }) => ({
-  src: image.src,
-  width: image.width,
-  height: image.height,
-  alt: image.alt,
-  filter: sector?.slug ?? null,
-  label: sector?.shortName ?? null,
-  icon: sector?.icon ?? null,
-}));
+  // Plain, serialisable data for the client component
+  const photos: GalleryGridPhoto[] = gallery.map(({ image, sectorSlug }) => {
+    const sector = sectors.find((s) => s.slug === sectorSlug);
+    return {
+      src: image.src,
+      width: image.width,
+      height: image.height,
+      alt: image.alt,
+      filter: sector?.slug ?? null,
+      label: sector?.shortName ?? null,
+      icon: sector?.icon ?? null,
+    };
+  });
 
-const filters = [
-  { value: "all", label: "All photos", count: photos.length },
-  ...sectors.map((s) => ({
-    value: s.slug,
-    label: s.shortName,
-    count: photos.filter((p) => p.filter === s.slug).length,
-  })),
-];
-
-export default function GalleryPage() {
+  const filters = [
+    { value: "all", label: "All photos", count: photos.length },
+    ...sectors.map((s) => ({
+      value: s.slug,
+      label: s.shortName,
+      count: photos.filter((p) => p.filter === s.slug).length,
+    })),
+  ];
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <PageMotion>
@@ -46,7 +45,7 @@ export default function GalleryPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "Gallery" }]}
-          image={bannerImages.gallery}
+          image={page.bannerImage}
         >
           <div className="mt-2 flex flex-wrap gap-3">
             <ButtonLink href="/sectors" fx>

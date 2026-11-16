@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import { Icon } from "@/components/Icon";
 import { SiteChrome } from "@/components/SiteChrome";
 import { ArrowLink, ButtonLink, Container } from "@/components/ui";
-import { navigation, sectorHref, sectors } from "@/lib/site";
+import { getSectors } from "@/lib/content/site-content";
+import { navigation, sectorHref } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Page not found",
   robots: { index: false },
 };
 
-export default function NotFound() {
+export default async function NotFound() {
+  const sectors = await getSectors();
   return (
     <SiteChrome>
     <main id="main" className="bg-mist">

@@ -81,7 +81,7 @@ export function ContactForm({ sectorOptions, inboxEmail, whatsappHref }: Contact
     }
 
     setStatus("submitting");
-    const result = await submitEnquiry(enquiry);
+    const result = await submitEnquiry(enquiry, { inbox: inboxEmail });
     if (result.status === "error") {
       setErrorMessage(result.message);
       setStatus("error");

@@ -7,19 +7,18 @@ import { Icon } from "@/components/Icon";
 import { PageMotion } from "@/components/motion/PageMotion";
 import { PageBanner } from "@/components/PageBanner";
 import { ArrowLink, ButtonLink, Container, Section, SectionHeading } from "@/components/ui";
-import { bannerImages, samples } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import { about, approach, company, leaders, pages, values } from "@/lib/site";
 
-const page = pages.leadership;
+import { metadataForPage } from "@/lib/content/metadata";
+import { getAbout, getCompany, getLeaders, getPages } from "@/lib/content/site-content";
 
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/leadership",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("leadership", "/leadership");
+}
 
-export default function LeadershipPage() {
+export default async function LeadershipPage() {
+  const [about, company, leaders, pages] = await Promise.all([getAbout(), getCompany(), getLeaders(), getPages()]);
+  const page = pages.leadership;
+  const { values, approach } = about;
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <PageMotion>
@@ -28,7 +27,7 @@ export default function LeadershipPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "Leadership" }]}
-          image={bannerImages.leadership}
+          image={page.bannerImage}
         />
 
         {/* Directors */}
@@ -110,7 +109,7 @@ export default function LeadershipPage() {
         >
           <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-20">
             <div className="parallax absolute inset-0">
-              <Image src={samples.teamMeeting.src} alt="" fill sizes="100vw" className="object-cover" />
+              <Image src={about.images.intro.src} alt="" fill sizes="100vw" className="object-cover" />
             </div>
           </div>
           <div aria-hidden="true" className="absolute inset-0 -z-10 bg-navy/70" />

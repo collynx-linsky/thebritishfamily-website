@@ -7,21 +7,20 @@ import { PageMotion } from "@/components/motion/PageMotion";
 import { RevealImage } from "@/components/motion/RevealImage";
 import { PageBanner } from "@/components/PageBanner";
 import { ArrowLink, ButtonLink, IconChip, Section } from "@/components/ui";
-import { bannerImages, sectorImage, sectorPhotos } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import { pages, sectorHref, sectors } from "@/lib/site";
+import { sectorImage, sectorPhotos } from "@/lib/samples";
+import { metadataForPage } from "@/lib/content/metadata";
+import { getPages, getSectors } from "@/lib/content/site-content";
+import { sectorHref } from "@/lib/site";
 
-const page = pages.sectors;
-
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/sectors",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("sectors", "/sectors");
+}
 
 const delay = (ms: number) => ({ "--reveal-delay": `${ms}ms` }) as React.CSSProperties;
 
-export default function SectorsPage() {
+export default async function SectorsPage() {
+  const [pages, sectors] = await Promise.all([getPages(), getSectors()]);
+  const page = pages.sectors;
   return (
     <main id="main" tabIndex={-1} className="outline-none">
       <PageMotion>
@@ -30,7 +29,7 @@ export default function SectorsPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "Sectors" }]}
-          image={bannerImages.sectors}
+          image={page.bannerImage}
         />
 
         {/* Sector strip: also a quick jump to each sector below */}

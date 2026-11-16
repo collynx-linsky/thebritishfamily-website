@@ -1,9 +1,13 @@
+import type { Company } from "./content/site-content";
 import type { NewsArticle } from "./content/types";
 import { absoluteUrl } from "./seo";
-import { company, sectors } from "./site";
+import { company as defaults, type Sector } from "./site";
+
+/** The logo stays in code (design, not content). */
+const logoUrl = () => absoluteUrl(defaults.logo.src);
 
 /** schema.org Article for a news page */
-export function articleJsonLd(article: NewsArticle) {
+export function articleJsonLd(article: NewsArticle, company: Pick<Company, "name">) {
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -16,13 +20,13 @@ export function articleJsonLd(article: NewsArticle) {
     publisher: {
       "@type": "Organization",
       name: company.name,
-      logo: { "@type": "ImageObject", url: absoluteUrl(company.logo.src) },
+      logo: { "@type": "ImageObject", url: logoUrl() },
     },
   };
 }
 
-/** schema.org Organization for the home page, using only known facts. */
-export function organizationJsonLd() {
+/** schema.org Organization for the home page, from the edited company details. */
+export function organizationJsonLd(company: Company, sectors: Sector[]) {
   const { address } = company;
   return {
     "@context": "https://schema.org",
@@ -31,7 +35,7 @@ export function organizationJsonLd() {
     name: company.name,
     alternateName: company.alternateNames,
     url: absoluteUrl("/"),
-    logo: absoluteUrl(company.logo.src),
+    logo: logoUrl(),
     description: company.description,
     foundingDate: String(company.established),
     email: company.email,
@@ -48,7 +52,7 @@ export function organizationJsonLd() {
       telephone: `+${p.e164}`,
       email: company.email,
       contactType: "customer service",
-      areaServed: "TZ",
+      areaServed: address.countryCode,
     })),
     knowsAbout: sectors.map((s) => s.name),
   };

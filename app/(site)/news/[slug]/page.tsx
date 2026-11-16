@@ -13,7 +13,9 @@ import { ArrowLink, Container, Section, SectionHeading } from "@/components/ui";
 import { getNewsArticle, getNewsArticles, readingMinutes } from "@/lib/content/news";
 import { newsCategoryLabels } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
-import { absoluteUrl, pageMetadata } from "@/lib/seo";
+import { metadataFor } from "@/lib/content/metadata";
+import { getCompany } from "@/lib/content/site-content";
+import { absoluteUrl } from "@/lib/seo";
 import { articleJsonLd } from "@/lib/structured-data";
 
 export async function generateStaticParams() {
@@ -25,11 +27,7 @@ export async function generateMetadata({ params }: PageProps<"/news/[slug]">): P
   const { slug } = await params;
   const article = await getNewsArticle(slug);
   if (!article) return {};
-  return pageMetadata({
-    title: article.title,
-    description: article.excerpt,
-    path: `/news/${article.slug}`,
-  });
+  return metadataFor(article.title, article.excerpt, `/news/${article.slug}`);
 }
 
 /**
@@ -70,12 +68,13 @@ async function ArticleContent({ params }: { params: Promise<{ slug: string }> })
   const article = await getNewsArticle(slug);
   if (!article) notFound();
 
-  const related = (await getNewsArticles()).filter((a) => a.slug !== article.slug).slice(0, 3);
+  const [all, company] = await Promise.all([getNewsArticles(), getCompany()]);
+  const related = all.filter((a) => a.slug !== article.slug).slice(0, 3);
   const url = absoluteUrl(`/news/${article.slug}`);
 
   return (
     <PageMotion>
-      <JsonLd data={articleJsonLd(article)} />
+      <JsonLd data={articleJsonLd(article, company)} />
       <PageBanner
         eyebrow={newsCategoryLabels[article.category]}
         title={article.title}

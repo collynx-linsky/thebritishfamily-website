@@ -1,7 +1,7 @@
 import { shareImageAlt, shareImageSize } from "@/lib/seo";
 import { renderShareImage } from "@/lib/share-image";
 
-export const alt = shareImageAlt;
+export const alt = shareImageAlt();
 export const size = shareImageSize;
 export const contentType = "image/png";
 

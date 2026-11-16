@@ -6,20 +6,17 @@ import { NewsCard } from "@/components/NewsCard";
 import { PageBanner } from "@/components/PageBanner";
 import { Section } from "@/components/ui";
 import { getNewsArticles } from "@/lib/content/news";
-import { samples } from "@/lib/samples";
-import { pageMetadata } from "@/lib/seo";
-import { pages } from "@/lib/site";
+import { metadataForPage } from "@/lib/content/metadata";
+import { getPages } from "@/lib/content/site-content";
 
-const page = pages.news;
-
-export const metadata: Metadata = pageMetadata({
-  title: page.title,
-  description: page.description,
-  path: "/news",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return metadataForPage("news", "/news");
+}
 
 export default async function NewsPage() {
-  const [featured, ...rest] = await getNewsArticles();
+  const [articles, pages] = await Promise.all([getNewsArticles(), getPages()]);
+  const page = pages.news;
+  const [featured, ...rest] = articles;
 
   return (
     <main id="main" tabIndex={-1} className="outline-none">
@@ -29,7 +26,7 @@ export default async function NewsPage() {
           title={page.heading}
           lead={page.lead}
           crumbs={[{ label: "News" }]}
-          image={samples.chemLabBench}
+          image={page.bannerImage}
         />
 
         <Section tone="mist" labelledBy="news-title">
