@@ -251,10 +251,11 @@ export function ContactForm({ sectorOptions, inboxEmail, whatsappHref }: Contact
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2.5 rounded-sm bg-gold px-8 font-bold text-ink transition duration-200 hover:bg-gold-bright hover:shadow-lift disabled:cursor-wait disabled:opacity-70 motion-safe:hover:-translate-y-0.5"
+          className="btn-fx inline-flex min-h-12 shrink-0 items-center justify-center gap-2.5 rounded-sm bg-gold px-8 font-bold text-ink [--btn-fill:var(--color-gold-bright)] disabled:cursor-wait disabled:opacity-70"
         >
           <Icon name="mail" size={18} strokeWidth={2.2} />
           {status === "submitting" ? "Opening email…" : "Send enquiry"}
+          <Icon name="arrow" size={18} strokeWidth={2.4} className="btn-fx-arrow" />
         </button>
       </div>
 

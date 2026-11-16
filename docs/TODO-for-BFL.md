@@ -4,23 +4,35 @@ The site was built only from facts in `docs/content.md` (the company profile). E
 
 When an answer comes back, update `lib/site.ts`; most items need no component changes.
 
-## Home page photo placeholders
+## Sample photos to replace before launch (important)
 
-The home page shows branded navy/gold tiles marked "Photo coming soon" or "Project photo coming soon" wherever a real photo is still needed. Each is defined in `lib/home-media.ts` (gallery) or comes from the sector having no `image` in `lib/site.ts`. Replacing a placeholder needs only a new photo file and a one-line change there.
+To make the site look complete during development, 17 **free stock sample photos** from Unsplash are used across every page. They are free for commercial use under the Unsplash License, but they show **other companies' sites and people, not BFL's own work**. They must be replaced with real BFL photos (or removed) before the site goes public. Otherwise visitors could take them for BFL's projects and staff.
 
-| # | Where on the home page | Label shown | Photo needed |
-| --- | --- | --- | --- |
-| P1 | Sectors grid, "Educational services" card | Photo coming soon | Educational services in action (training, classroom or partner institution, with permission) |
-| P2 | Sector strip (scrolling band), "Educational services" thumbnail | Photo coming soon (icon tile) | Same photo as P1 works here |
-| P3 | "Our work in pictures" gallery, tile 2 | Photo coming soon (Educational services) | Same photo as P1, or a second education photo |
-| P4 | "Our work in pictures" gallery, tile 4 | Project photo coming soon (Mining and chemicals) | A real BFL mining or chemical supply site, delivery or product photo |
-| P5 | "Our work in pictures" gallery, tile 6 | Project photo coming soon (Construction) | A real BFL construction project photo |
+All samples live in `public/images/samples/` and are defined in one file, `lib/samples.ts`. Real photos always take priority: setting `image` on a sector in `lib/site.ts` replaces that sector's sample everywhere. To remove the samples entirely, delete `lib/samples.ts` and fix the imports TypeScript reports.
 
-The home page also reuses the existing photos (skyline, mining, construction, electronics) in the hero slideshow, the strip and the gallery. Because they are low resolution, they are kept small or under overlays. Higher-resolution originals (see item 2 below) would make the slideshow noticeably sharper. A real BFL photo for each sector would also let the gallery show the company's own work rather than generic scenes.
+| Sample file | Where it appears | Real photo needed |
+| --- | --- | --- |
+| `education-teacher.jpg` | Educational services photo on the home page, sector cards, the strip, the hero slideshow, the education sector page | Educational services in action (training, classroom or partner institution, with permission) |
+| `education-books.jpg`, `education-classroom.jpg` | Education sector page photo row, Gallery | More education photos |
+| `mining-open-pit-aerial.jpg` | Gallery page banner, About (behind mission), mining sector page and Sectors thumbnails, Gallery | A real BFL mining site |
+| `mining-truck-road.jpg`, `mining-haul-truck.jpg` | Mining sector page photo row, Gallery | Real BFL mining operations or deliveries |
+| `chem-lab-bench.jpg`, `chem-test-tube.jpg` | Home gallery, mining sector page, Sectors thumbnails, Gallery | Real BFL mineral processing chemical products, storage or lab work |
+| `construction-crane.jpg` | Sectors page banner, About (philosophy), home slideshow, Gallery | A real BFL construction project |
+| `construction-bricks.jpg` | Contact page banner, home gallery, construction pages, Gallery | A real BFL construction site |
+| `construction-worker.jpg` | Leadership page banner, construction pages, Gallery | BFL team on site |
+| `construction-frame.jpg` | Construction sector page photo row, Gallery | A real BFL construction project |
+| `appliances-store.jpg`, `appliances-stoves-shop.jpg` | Home gallery, electronics pages, Gallery | BFL's electronics and appliances stock, store or deliveries |
+| `team-meeting.jpg` | About page banner and introduction, Leadership values band, Gallery | BFL office or team photo |
+| `logistics-boxes.jpg` | About ("How we work"), Contact closing band, Gallery | BFL deliveries or warehouse |
+| `logistics-forklift.jpg` | Gallery | BFL deliveries or warehouse |
+
+Credits (optional under the licence) are recorded in `lib/samples.ts`.
+
+The existing real photos (skyline, mining, construction, electronics) are low resolution, so they are kept small or under overlays. Higher-resolution originals (see item 2 below) would make the slideshow and banners noticeably sharper.
 
 ## Photos
 
-1. **Educational services photo.** There is no photo for this sector, so the site shows a branded navy panel instead. A real photo (a training session, classroom, or a partner institution, used with permission) would replace it everywhere. In `lib/site.ts`, set `image` on the `educational-services` sector.
+1. **Educational services photo.** There is no real photo for this sector, so the site currently shows a stock sample (see above). A real photo (a training session, classroom, or a partner institution, used with permission) would replace it everywhere. In `lib/site.ts`, set `image` on the `educational-services` sector.
 2. **Higher-resolution photos of all four sectors.** The current images come from the PDF and are 480 to 740 px wide, so they are only shown small or under overlays. Original photos at least 1600 px wide, ideally of BFL's own sites, people and stock rather than generic scenes, would allow larger, sharper images.
 3. **Higher-resolution director portraits.** The portraits are about 290 px wide, so they are capped at 220 px on the site. Originals or new portraits on a neutral background would look sharper and more consistent.
 4. **Logo as a vector file (SVG or PDF).** The logo is a 600 px PNG. A vector version would give a crisper header, favicon and share image.

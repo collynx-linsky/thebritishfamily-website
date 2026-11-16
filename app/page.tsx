@@ -3,12 +3,11 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { CtaBand } from "@/components/CtaBand";
 import { FactCircle } from "@/components/FactCircle";
-import { GalleryCarousel } from "@/components/home/GalleryCarousel";
-import { HeroSlider } from "@/components/home/HeroSlider";
-import { Marquee } from "@/components/home/Marquee";
-import { MotionRoot } from "@/components/home/MotionRoot";
-import { PhotoPlaceholder } from "@/components/home/PhotoPlaceholder";
-import { ScrollChrome } from "@/components/home/ScrollChrome";
+import { GalleryCarousel } from "@/components/motion/GalleryCarousel";
+import { HeroSlider } from "@/components/motion/HeroSlider";
+import { Marquee } from "@/components/motion/Marquee";
+import { MotionRoot } from "@/components/motion/MotionRoot";
+import { ScrollChrome } from "@/components/motion/ScrollChrome";
 import { Icon } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
 import { LeaderCard } from "@/components/LeaderCard";
@@ -22,7 +21,8 @@ import {
   Section,
   SectionHeading,
 } from "@/components/ui";
-import { galleryItems, heroSlides, placeholderLabels } from "@/lib/home-media";
+import { heroSlides, homeGallery } from "@/lib/media";
+import { sectorImage } from "@/lib/samples";
 import { organizationJsonLd } from "@/lib/structured-data";
 import {
   about,
@@ -254,21 +254,13 @@ export default function HomePage() {
                     className="group flex min-h-11 items-center gap-4 rounded-sm px-6"
                   >
                     <span className="relative size-16 shrink-0 overflow-hidden rounded-md ring-1 ring-white/15">
-                      {sector.image ? (
-                        <Image
-                          src={sector.image.src}
-                          alt=""
-                          fill
-                          sizes="64px"
-                          className="object-cover transition-transform duration-700 ease-premium motion-safe:group-hover:scale-110"
-                        />
-                      ) : (
-                        <PhotoPlaceholder
-                          icon={sector.icon}
-                          label={placeholderLabels.sector}
-                          size="sm"
-                        />
-                      )}
+                      <Image
+                        src={sectorImage(sector).src}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover transition-transform duration-700 ease-premium motion-safe:group-hover:scale-110"
+                      />
                     </span>
                     <span className="font-display text-xl font-bold whitespace-nowrap transition-colors group-hover:text-gold md:text-2xl">
                       {sector.shortName}
@@ -295,7 +287,7 @@ export default function HomePage() {
           <ul data-reveal="stagger" className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {sectors.map((sector) => (
               <li key={sector.slug}>
-                <SectorCard sector={sector} showcase placeholderLabel={placeholderLabels.sector} />
+                <SectorCard sector={sector} showcase />
               </li>
             ))}
           </ul>
@@ -318,34 +310,32 @@ export default function HomePage() {
 
         {/* 7. Our work in pictures */}
         <Section tone="mist" labelledBy="gallery-title">
-          <div data-reveal="up">
+          <div data-reveal="up" className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <SectionHeading id="gallery-title" eyebrow="Gallery" title="Our work in pictures" />
+            <ArrowLink href="/gallery" fx>
+              View the full gallery
+            </ArrowLink>
           </div>
           <div className="mt-4">
             <GalleryCarousel label="Photo gallery">
-              {galleryItems.map((item, i) => (
-                <li
-                  key={`${item.kind}-${item.sector.slug}-${i}`}
-                  className="w-[min(80vw,24rem)] shrink-0 snap-start"
-                >
+              {homeGallery.map((item) => (
+                <li key={item.image.src} className="w-[min(80vw,24rem)] shrink-0 snap-start">
                   <figure className="group flex flex-col gap-3">
                     <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-navy shadow-card">
-                      {item.kind === "photo" ? (
-                        <Image
-                          src={item.image.src}
-                          alt={item.image.alt}
-                          fill
-                          sizes="(min-width: 640px) 384px, 80vw"
-                          className="object-cover transition-transform duration-700 ease-premium motion-safe:group-hover:scale-[1.06]"
-                        />
-                      ) : (
-                        <PhotoPlaceholder icon={item.sector.icon} label={item.label} />
-                      )}
+                      <Image
+                        src={item.image.src}
+                        alt={item.image.alt}
+                        fill
+                        sizes="(min-width: 640px) 384px, 80vw"
+                        className="object-cover transition-transform duration-700 ease-premium motion-safe:group-hover:scale-[1.06]"
+                      />
                     </div>
-                    <figcaption className="flex items-center gap-2 text-sm font-semibold text-navy">
-                      <Icon name={item.sector.icon} size={18} className="text-gold-deep" />
-                      {item.sector.shortName}
-                    </figcaption>
+                    {item.sector ? (
+                      <figcaption className="flex items-center gap-2 text-sm font-semibold text-navy">
+                        <Icon name={item.sector.icon} size={18} className="text-gold-deep" />
+                        {item.sector.shortName}
+                      </figcaption>
+                    ) : null}
                   </figure>
                 </li>
               ))}

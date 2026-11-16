@@ -1,10 +1,10 @@
 import Image from "next/image";
+import { sectorImage } from "@/lib/samples";
 import type { Sector } from "@/lib/site";
-import { Icon } from "./Icon";
-import { PhotoPlaceholder } from "./home/PhotoPlaceholder";
 
 /**
- * A sector's photo, or a branded navy panel when no photo exists yet.
+ * A sector's photo: the real one from lib/site.ts, or a temporary sample
+ * (lib/samples.ts) while the real photo is still missing.
  * Always fills its (relatively positioned, sized) parent.
  */
 export function SectorMedia({
@@ -13,58 +13,29 @@ export function SectorMedia({
   preload = false,
   zoomOnHover = false,
   strongZoom = false,
-  placeholderLabel,
 }: {
   sector: Sector;
   sizes: string;
   preload?: boolean;
   zoomOnHover?: boolean;
-  /** Slower, deeper zoom (home page showcase cards) */
+  /** Slower, deeper zoom (showcase cards) */
   strongZoom?: boolean;
-  /** When set and there is no photo, show a labelled "photo coming soon" tile */
-  placeholderLabel?: string;
 }) {
   const zoom = !zoomOnHover
     ? ""
     : strongZoom
       ? "transition-transform duration-700 ease-premium motion-safe:group-hover:scale-[1.08]"
       : "transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.04]";
-
-  if (!sector.image && placeholderLabel) {
-    return (
-      <div className={`absolute inset-0 ${zoom}`}>
-        <PhotoPlaceholder icon={sector.icon} label={placeholderLabel} />
-      </div>
-    );
-  }
-
-  if (sector.image) {
-    return (
-      <Image
-        src={sector.image.src}
-        alt={sector.image.alt}
-        fill
-        sizes={sizes}
-        preload={preload}
-        className={`object-cover ${zoom}`}
-      />
-    );
-  }
+  const image = sectorImage(sector);
 
   return (
-    <div
-      aria-hidden="true"
-      className={`absolute inset-0 overflow-hidden bg-[radial-gradient(120%_120%_at_85%_10%,var(--color-navy-soft)_0%,var(--color-navy)_55%,var(--color-navy-deep)_100%)] ${zoom}`}
-    >
-      {/* Concentric arcs echo the circle in the BFL logo */}
-      <span className="absolute -right-[28%] -bottom-[70%] aspect-square w-[80%] rounded-full border-[26px] border-gold" />
-      <span className="absolute -right-[10%] -bottom-[38%] aspect-square w-[46%] rounded-full border-2 border-white/15" />
-      <span className="absolute -top-[30%] -left-[12%] aspect-square w-[55%] rounded-full border border-white/10" />
-      <span className="absolute inset-0 flex items-center justify-center">
-        <span className="flex aspect-square h-[46%] min-h-16 items-center justify-center rounded-full bg-navy-deep text-gold shadow-lift ring-1 ring-gold/40">
-          <Icon name={sector.icon} size={44} strokeWidth={1.5} className="size-1/2" />
-        </span>
-      </span>
-    </div>
+    <Image
+      src={image.src}
+      alt={image.alt}
+      fill
+      sizes={sizes}
+      preload={preload}
+      className={`object-cover ${zoom}`}
+    />
   );
 }

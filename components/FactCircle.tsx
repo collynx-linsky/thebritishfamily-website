@@ -1,5 +1,5 @@
 import type { Fact } from "@/lib/site";
-import { CountUp } from "./home/CountUp";
+import { CountUp } from "./motion/CountUp";
 import { Icon } from "./Icon";
 
 /** Round fact counter from the approved design. Numbers count up on scroll. */

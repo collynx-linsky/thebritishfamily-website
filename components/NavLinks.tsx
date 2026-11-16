@@ -13,7 +13,7 @@ export function isActivePath(pathname: string, href: string) {
 export function NavLinks({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
-    <ul className="flex items-center gap-x-8 text-[0.9375rem] font-semibold">
+    <ul className="flex items-center gap-x-6 text-[0.9375rem] font-semibold xl:gap-x-8">
       {items.map((item) => {
         const active = isActivePath(pathname, item.href);
         return (

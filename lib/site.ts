@@ -139,6 +139,7 @@ export const navigation: NavItem[] = [
   { label: "About", href: "/about" },
   { label: "Sectors", href: "/sectors" },
   { label: "Leadership", href: "/leadership" },
+  { label: "Gallery", href: "/gallery" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -452,6 +453,14 @@ export const pages = {
     eyebrow: "The organisation",
     heading: "Leadership",
     lead: "The directors guiding the strategy and day-to-day operations of The British Family Limited.",
+  },
+  gallery: {
+    title: "Gallery",
+    description:
+      "Photos across the four sectors of The British Family Limited: mining and mineral processing chemicals, construction, electronics and home appliances, and educational services.",
+    eyebrow: "Gallery",
+    heading: "Our sectors in pictures",
+    lead: "A look across mining and mineral processing chemicals, construction, electronics and home appliances, and educational services.",
   },
   contact: {
     title: "Contact us",

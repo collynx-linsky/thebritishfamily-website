@@ -11,7 +11,7 @@ export function CtaBand({
   title?: string;
   body?: string;
   emailHref?: string;
-  /** Home page: premium buttons and a scroll reveal on the heading */
+  /** Premium buttons and a scroll reveal on the heading */
   fx?: boolean;
 }) {
   return (

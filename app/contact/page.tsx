@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/ContactForm";
 import { EmailText } from "@/components/EmailText";
 import { Icon } from "@/components/Icon";
+import { PageMotion } from "@/components/motion/PageMotion";
+import { RevealImage } from "@/components/motion/RevealImage";
 import { PageBanner } from "@/components/PageBanner";
-import { ButtonLink, Section } from "@/components/ui";
+import { ButtonLink, Container, Section } from "@/components/ui";
+import { bannerImages, samples } from "@/lib/samples";
 import { pageMetadata } from "@/lib/seo";
 import {
+  approach,
   company,
   leaders,
   pages,
+  primaryPhone,
   sectors,
   telHref,
   whatsappGreeting,
@@ -58,20 +63,61 @@ export default function ContactPage() {
   const { address } = company;
   const whatsapp = whatsappHref(whatsappGreeting);
 
+  const quickContacts: { icon: IconName; label: string; value: string; href: string; external?: boolean }[] = [
+    { icon: "phone", label: "Call us", value: primaryPhone.display, href: telHref(primaryPhone) },
+    { icon: "mail", label: "Email us", value: "General enquiries", href: `mailto:${company.email}` },
+    { icon: "whatsapp", label: "WhatsApp", value: "Quick message", href: whatsapp, external: true },
+    { icon: "pin", label: "Visit us", value: address.city, href: "#details-title" },
+  ];
+
   return (
-    <main id="main">
-      <PageBanner
-        eyebrow={page.eyebrow}
-        title={page.heading}
-        lead={page.lead}
-        crumbs={[{ label: "Contact" }]}
-      />
+    <main id="main" tabIndex={-1} className="outline-none">
+      <PageMotion>
+        <PageBanner
+          eyebrow={page.eyebrow}
+          title={page.heading}
+          lead={page.lead}
+          crumbs={[{ label: "Contact" }]}
+          image={bannerImages.contact}
+        />
+
+        {/* Quick contact tiles, overlapping the banner */}
+        <div className="bg-mist">
+          <Container className="relative z-10 -mt-10 md:-mt-12">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {quickContacts.map((item, i) => (
+                <li key={item.label} className="hero-rise" style={{ "--delay": `${450 + i * 110}ms` } as React.CSSProperties}>
+                  <a
+                    href={item.href}
+                    {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="group lift flex h-full items-center gap-4 rounded-lg bg-white p-5 shadow-card"
+                  >
+                    <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-full bg-gold text-ink transition-transform duration-500 ease-premium motion-safe:group-hover:scale-110 motion-safe:group-hover:-rotate-6">
+                      <Icon name={item.icon} size={22} strokeWidth={2} />
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="font-display text-lg font-bold text-navy">{item.label}</span>
+                      <span className="truncate text-sm text-muted">{item.value}</span>
+                    </span>
+                    <Icon
+                      name="arrow"
+                      size={18}
+                      strokeWidth={2.4}
+                      className="ml-auto shrink-0 text-gold-deep transition-transform duration-500 ease-premium motion-safe:group-hover:translate-x-1"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Container>
+        </div>
 
       <Section tone="mist">
         <div className="grid gap-8 lg:grid-cols-[1fr_1.7fr] lg:gap-10">
           {/* Contact details */}
           <aside
             aria-labelledby="details-title"
+            data-reveal="left"
             className="on-dark flex min-w-0 flex-col gap-8 self-start rounded-lg bg-navy p-7 text-white md:p-9"
           >
             <h2 id="details-title" className="text-2xl font-extrabold">
@@ -125,7 +171,7 @@ export default function ContactPage() {
 
             <div className="border-t border-navy-line pt-7">
               <p className="mb-4 text-on-navy">Prefer a quick message?</p>
-              <ButtonLink href={whatsapp} icon="whatsapp" external className="w-full sm:w-auto">
+              <ButtonLink href={whatsapp} icon="whatsapp" external fx className="w-full sm:w-auto">
                 Chat on WhatsApp
               </ButtonLink>
             </div>
@@ -135,8 +181,11 @@ export default function ContactPage() {
           <section
             id="enquiry"
             aria-labelledby="enquiry-title"
-            className="min-w-0 scroll-mt-28 rounded-lg bg-white p-7 shadow-card md:p-10"
+            data-reveal="up"
+            style={{ "--reveal-delay": "120ms" } as React.CSSProperties}
+            className="relative min-w-0 scroll-mt-28 overflow-hidden rounded-lg bg-white p-7 shadow-card md:p-10"
           >
+            <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-gold via-gold-bright to-gold" />
             <p className="eyebrow text-amber-ink">Enquiry form</p>
             <h2 id="enquiry-title" className="mt-2 text-section font-extrabold text-navy">
               Send us an enquiry
@@ -153,6 +202,37 @@ export default function ContactPage() {
           </section>
         </div>
       </Section>
+
+        {/* Closing band */}
+        <section aria-labelledby="serving-title" className="bg-white py-16 md:py-20">
+          <Container>
+            <div className="grid items-center gap-10 md:grid-cols-2 md:gap-14">
+              <RevealImage
+                image={samples.logisticsBoxes}
+                sizes="(min-width: 768px) 560px, 100vw"
+                className="aspect-16/10"
+                parallax
+                decorative
+              />
+              <div data-reveal="right" className="flex flex-col items-start gap-4">
+                <p className="eyebrow text-amber-ink">Nationwide service</p>
+                <h2 id="serving-title" className="text-section font-extrabold text-navy">
+                  Serving clients across Tanzania
+                </h2>
+                <p className="text-muted">{approach[3].description}</p>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  <ButtonLink href="/sectors" variant="navy" fx>
+                    Explore our sectors
+                  </ButtonLink>
+                  <ButtonLink href="/gallery" variant="outline" fx>
+                    View the gallery
+                  </ButtonLink>
+                </div>
+              </div>
+            </div>
+          </Container>
+        </section>
+      </PageMotion>
     </main>
   );
 }

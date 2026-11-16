@@ -10,7 +10,6 @@ export function SectorCard({
   headingLevel = "h3",
   sizes = "(min-width: 1024px) 280px, (min-width: 640px) 50vw, 100vw",
   showcase = false,
-  placeholderLabel,
 }: {
   sector: Sector;
   headingLevel?: "h2" | "h3";
@@ -20,8 +19,6 @@ export function SectorCard({
    * with the sector icon on hover.
    */
   showcase?: boolean;
-  /** Label for the placeholder tile when the sector has no photo yet */
-  placeholderLabel?: string;
 }) {
   const Heading = headingLevel;
 
@@ -35,7 +32,6 @@ export function SectorCard({
           sizes={sizes}
           zoomOnHover
           strongZoom={showcase}
-          placeholderLabel={placeholderLabel}
         />
         {showcase ? (
           <div

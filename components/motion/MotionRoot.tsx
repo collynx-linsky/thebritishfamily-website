@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
  * ("up" | "left" | "right" | "scale" | "stagger" | "wipe").
  *
  * The server HTML shows everything. After hydration, only elements that are
- * still below (or above) the viewport are set to data-state="hidden", then
- * revealed once as they scroll into view. With reduced motion nothing is
+ * still below the viewport are set to data-state="hidden", then revealed
+ * once as they scroll into view. With reduced motion nothing is
  * hidden at all. The CSS lives in app/globals.css.
  */
 export function MotionRoot({ children }: { children: React.ReactNode }) {
@@ -32,8 +32,12 @@ export function MotionRoot({ children }: { children: React.ReactNode }) {
     const viewport = window.innerHeight;
     root.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
       if (el.dataset.state === "shown") return; // already revealed (page kept alive)
-      const { top, bottom } = el.getBoundingClientRect();
-      if (top < viewport * 0.9 && bottom > 0) return; // on screen now: leave it visible
+      const { top, width, height } = el.getBoundingClientRect();
+      // Only hide what is still below the fold. Elements on screen or already
+      // scrolled past (restored scroll, anchor links) stay visible, and so do
+      // elements not laid out at this width (display: none), which could
+      // otherwise never be revealed.
+      if (top < viewport * 0.9 || (width === 0 && height === 0)) return;
       el.dataset.state = "hidden";
       observer.observe(el);
     });
