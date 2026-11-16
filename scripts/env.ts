@@ -19,6 +19,33 @@ export function requireEnv(name: string): string {
   return value;
 }
 
+/**
+ * Check that DATABASE_URL looks like a Postgres address and explain common
+ * copy-and-paste mistakes. Never prints the value itself (it holds a password).
+ * Exits when it is unusable, before any connection is attempted.
+ */
+export function requireDatabaseUrl(): void {
+  const raw = requireEnv("DATABASE_URL");
+  const problems: string[] = [];
+  if (/^\s|\s$/.test(raw)) problems.push("It starts or ends with a space. Remove the spaces.");
+  if (/[<>]/.test(raw)) problems.push("It contains < or >. Those were only placeholders in the instructions: paste the address alone.");
+  if (/^[A-Z_]+\s*=/.test(raw.trim())) problems.push("It starts with a NAME= part. You copied the whole line: paste only the part inside the quotes, starting with postgresql://");
+  if (/["'`]/.test(raw)) problems.push("It contains quote marks inside the value. Paste only the address, without its own quotes.");
+  if (!problems.length && !/^postgres(ql)?:\/\//.test(raw)) problems.push("It doesn't start with postgresql:// — check you copied the complete address.");
+  if (!problems.length) {
+    try {
+      const url = new URL(raw);
+      if (!url.hostname) problems.push("It has no server name. Check you copied the complete address.");
+    } catch {
+      problems.push("It isn't a valid address. Check you copied all of it, in one piece.");
+    }
+  }
+  if (problems.length) {
+    console.error(`\n  DATABASE_URL can't be used (its value is not shown, because it contains a password):\n${problems.map((p) => `   - ${p}`).join("\n")}\n`);
+    process.exit(1);
+  }
+}
+
 /** "host / database" of DATABASE_URL, without the user name or password. */
 export function describeDatabase(): string {
   try {

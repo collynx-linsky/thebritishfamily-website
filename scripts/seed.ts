@@ -9,7 +9,7 @@
  * account is created from ADMIN_EMAIL and ADMIN_INITIAL_PASSWORD only if it
  * does not exist yet.
  */
-import { describeDatabase, explainError, requireEnv } from "./env";
+import { describeDatabase, explainError, requireDatabaseUrl, requireEnv } from "./env";
 import { count, eq } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { createDb, createPool, schema } from "../lib/db/client";
@@ -21,7 +21,7 @@ import { galleryPhotos, heroSlides, homeGallery } from "../lib/media";
 import { hashPassword, passwordProblem } from "../lib/auth/password";
 import { leaders, sectors } from "../lib/site";
 
-requireEnv("DATABASE_URL");
+requireDatabaseUrl();
 console.log(`\n  Seeding ${describeDatabase()}`);
 const pool = createPool();
 const db = createDb(pool);

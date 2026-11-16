@@ -8,11 +8,11 @@
  * an error code, so a following command such as the seed does not run
  * against a half-set-up database.
  */
-import { describeDatabase, explainError, requireEnv } from "./env";
+import { describeDatabase, explainError, requireDatabaseUrl } from "./env";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDb, createPool } from "../lib/db/client";
 
-requireEnv("DATABASE_URL");
+requireDatabaseUrl();
 console.log(`\n  Applying migrations to ${describeDatabase()}`);
 
 const pool = createPool();
