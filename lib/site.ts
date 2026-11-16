@@ -25,7 +25,12 @@ export type IconName =
   | "truck"
   | "spark"
   | "leaf"
-  | "compass";
+  | "compass"
+  | "file"
+  | "download"
+  | "calendar"
+  | "news"
+  | "link";
 
 export type ImageAsset = {
   src: string;
@@ -140,8 +145,19 @@ export const navigation: NavItem[] = [
   { label: "Sectors", href: "/sectors" },
   { label: "Leadership", href: "/leadership" },
   { label: "Gallery", href: "/gallery" },
+  { label: "News", href: "/news" },
+  { label: "Downloads", href: "/downloads" },
   { label: "Contact", href: "/contact" },
 ];
+
+/**
+ * Desktop header links. Shorter than `navigation` so the bar fits at 1024px:
+ * the logo already links home, and Downloads sits in the top bar. The mobile
+ * menu, footer and sitemap use the full `navigation` list.
+ */
+export const headerNavigation: NavItem[] = navigation.filter(
+  (item) => item.href !== "/" && item.href !== "/downloads",
+);
 
 export const quoteCta: NavItem = { label: "Request a quote", href: "/contact#enquiry" };
 
@@ -461,6 +477,22 @@ export const pages = {
     eyebrow: "Gallery",
     heading: "Our sectors in pictures",
     lead: "A look across mining and mineral processing chemicals, construction, electronics and home appliances, and educational services.",
+  },
+  news: {
+    title: "News",
+    description:
+      "News and updates from The British Family Limited, a diversified company in Dar es Salaam, Tanzania.",
+    eyebrow: "News",
+    heading: "News and updates",
+    lead: "The latest from The British Family Limited across our four sectors.",
+  },
+  downloads: {
+    title: "Downloads",
+    description:
+      "Download The British Family Limited's company profile, contact card, forms and other documents.",
+    eyebrow: "Downloads",
+    heading: "Documents and downloads",
+    lead: "Our company profile, forms and other documents, ready to download whenever you need them.",
   },
   contact: {
     title: "Contact us",

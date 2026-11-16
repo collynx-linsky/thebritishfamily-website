@@ -1,5 +1,25 @@
+import type { NewsArticle } from "./content/types";
 import { absoluteUrl } from "./seo";
 import { company, sectors } from "./site";
+
+/** schema.org Article for a news page */
+export function articleJsonLd(article: NewsArticle) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    image: absoluteUrl(article.image.src),
+    datePublished: article.publishedAt,
+    mainEntityOfPage: absoluteUrl(`/news/${article.slug}`),
+    author: { "@type": "Organization", name: company.name, url: absoluteUrl("/") },
+    publisher: {
+      "@type": "Organization",
+      name: company.name,
+      logo: { "@type": "ImageObject", url: absoluteUrl(company.logo.src) },
+    },
+  };
+}
 
 /** schema.org Organization for the home page, using only known facts. */
 export function organizationJsonLd() {

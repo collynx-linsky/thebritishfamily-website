@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  headerNavigation,
   navigation,
   primaryPhone,
   quoteCta,
@@ -19,7 +20,7 @@ export function SiteHeader() {
         <Logo />
 
         <nav aria-label="Main" className="hidden lg:block">
-          <NavLinks items={navigation} />
+          <NavLinks items={headerNavigation} />
         </nav>
 
         <div className="flex items-center gap-2">

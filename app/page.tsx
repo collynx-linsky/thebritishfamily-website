@@ -11,6 +11,8 @@ import { ScrollChrome } from "@/components/motion/ScrollChrome";
 import { Icon } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
 import { LeaderCard } from "@/components/LeaderCard";
+import { NewsCard } from "@/components/NewsCard";
+import { getLatestNews } from "@/lib/content/news";
 import { SectorCard } from "@/components/SectorCard";
 import {
   ArrowLink,
@@ -48,8 +50,9 @@ const electronics = sectors.find((s) => s.slug === "electronics-appliances")!;
 const delay = (ms: number) => ({ "--reveal-delay": `${ms}ms` }) as React.CSSProperties;
 const riseDelay = (ms: number) => ({ "--delay": `${ms}ms` }) as React.CSSProperties;
 
-export default function HomePage() {
+export default async function HomePage() {
   const { hero, highlights } = home;
+  const latestNews = await getLatestNews(3);
 
   return (
     <main id="main" tabIndex={-1} className="outline-none">
@@ -409,7 +412,26 @@ export default function HomePage() {
           </div>
         </Section>
 
-        {/* 10. Call to action */}
+        {/* 10. Latest news (managed in the admin panel later) */}
+        {latestNews.length ? (
+          <Section tone="mist" labelledBy="news-title">
+            <div data-reveal="up" className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <SectionHeading id="news-title" eyebrow="News" title="Latest news and updates" />
+              <ArrowLink href="/news" fx>
+                All news
+              </ArrowLink>
+            </div>
+            <ul data-reveal="stagger" className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {latestNews.map((article) => (
+                <li key={article.slug}>
+                  <NewsCard article={article} />
+                </li>
+              ))}
+            </ul>
+          </Section>
+        ) : null}
+
+        {/* 11. Call to action */}
         <CtaBand fx />
       </MotionRoot>
     </main>

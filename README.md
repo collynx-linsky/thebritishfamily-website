@@ -48,13 +48,39 @@ Images live in `public/images/`. Design tokens (colours, type sizes, shadows) ar
 
 Only publish facts the company has confirmed. Outstanding information is listed in `docs/TODO-for-BFL.md`.
 
+### News and downloads (ready for the admin panel)
+
+News (`/news`, `/news/[slug]`) and documents (`/downloads`) are designed to be managed from the future admin panel, so they are already separated from the rest of the content:
+
+| Layer | News | Downloads |
+| --- | --- | --- |
+| Types (the future database rows) | `lib/content/types.ts` | `lib/content/types.ts` |
+| Default content | `lib/defaults/news.ts` | `lib/defaults/downloads.ts` (files in `public/downloads/`) |
+| Access functions used by pages | `lib/content/news.ts` | `lib/content/downloads.ts` |
+
+Pages never read the defaults directly. Each access function is cached with `"use cache"`, `cacheTag("news")` or `cacheTag("downloads")`, and `cacheLife("max")`, so every page stays static. When the admin panel is built:
+
+1. Replace the body of `loadNews()` / `loadDownloads()` with a database query that falls back to the defaults if the database is unreachable. Store uploaded documents in Vercel Blob and save their URL as `file.url`.
+2. In the admin's save actions (server actions), call `updateTag(NEWS_TAG)` or `updateTag(DOWNLOADS_TAG)`. The home page news strip, the News pages, the sitemap and the Downloads page then refresh on the next visit.
+
+Article text is stored as plain-text blocks (`paragraph` or `heading`) and rendered as text, never HTML. The contact card (`/downloads/bfl-contact-card.vcf`) is generated from `company` in `lib/site.ts`, so it always matches the contact details on the site.
+
+### Sample photos
+
+`lib/samples.ts` defines temporary Unsplash sample photos (in `public/images/samples/`) used until real BFL photos are supplied. Real photos always take priority. They must be replaced before launch; see `docs/TODO-for-BFL.md`.
+
 ## Project structure
 
 ```text
-app/            routes: home, about, sectors, sectors/[slug], leadership, contact,
-                not-found, sitemap, robots, share images and icons
+app/            routes: home, about, sectors, sectors/[slug], leadership, gallery,
+                news, news/[slug], downloads, contact, not-found, sitemap,
+                robots, share images and icons
 components/     reusable UI (header, footer, cards, banner, form, icons)
-lib/site.ts     all site content
+components/motion/  scroll reveals, slideshow, gallery, strip, counters
+lib/site.ts     site content (company, sectors, leaders, page copy)
+lib/content/    news and downloads: types and cached access functions
+lib/defaults/   default news articles and downloads
+lib/samples.ts  temporary sample photos (replace before launch)
 lib/enquiry.ts  enquiry validation and delivery
 lib/seo.ts      site URL and per-page metadata helper
 docs/           brief, approved content, approved homepage design, TODO for BFL
