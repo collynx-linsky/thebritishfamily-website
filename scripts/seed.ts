@@ -9,7 +9,7 @@
  * account is created from ADMIN_EMAIL and ADMIN_INITIAL_PASSWORD only if it
  * does not exist yet.
  */
-import { requireEnv } from "./env";
+import { describeDatabase, explainError, requireEnv } from "./env";
 import { count, eq } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { createDb, createPool, schema } from "../lib/db/client";
@@ -22,6 +22,7 @@ import { hashPassword, passwordProblem } from "../lib/auth/password";
 import { leaders, sectors } from "../lib/site";
 
 requireEnv("DATABASE_URL");
+console.log(`\n  Seeding ${describeDatabase()}`);
 const pool = createPool();
 const db = createDb(pool);
 
@@ -161,7 +162,10 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error("\nSeed failed:", error instanceof Error ? error.message : error, "\n");
+    const reason = explainError(error);
+    console.error(`\n  Seed failed: ${reason}`);
+    if (/relation .* does not exist/.test(reason)) console.error("  The tables are missing: run npm run db:migrate first.");
+    console.error("");
     process.exitCode = 1;
   })
   .finally(() => pool.end());
