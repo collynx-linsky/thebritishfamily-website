@@ -3,9 +3,10 @@
  * the current state). Callers must have verified the session already.
  */
 import "server-only";
-import { count, max, min } from "drizzle-orm";
+import { asc, count, eq, max, min } from "drizzle-orm";
 import { requireDb, schema } from "../db";
 import type { HistoryEntity } from "../db/schema";
+import type { IconName } from "../site";
 import { ADMIN_AREAS, type AdminArea } from "./areas";
 
 export type AreaStatus = {
@@ -85,4 +86,42 @@ export async function getAreaStatuses(): Promise<AreaStatus[]> {
       itemCount: mainTable ? tableStats[mainTable].items : undefined,
     };
   });
+}
+
+/** Last saved time of each item of one entity type, by item id. */
+async function lastSavedById(entityType: HistoryEntity): Promise<Map<string, Date>> {
+  const rows = await requireDb()
+    .select({ id: schema.contentHistory.entityId, savedAt: max(schema.contentHistory.savedAt) })
+    .from(schema.contentHistory)
+    .where(eq(schema.contentHistory.entityType, entityType))
+    .groupBy(schema.contentHistory.entityId);
+  return new Map(rows.filter((r) => r.savedAt).map((r) => [r.id, r.savedAt as Date]));
+}
+
+export async function getSectorList() {
+  const [rows, saved] = await Promise.all([
+    requireDb()
+      .select({ slug: schema.sectors.slug, name: schema.sectors.name, summary: schema.sectors.summary, icon: schema.sectors.icon })
+      .from(schema.sectors)
+      .orderBy(asc(schema.sectors.sortOrder)),
+    lastSavedById("sector"),
+  ]);
+  return rows.map((r) => ({ ...r, icon: r.icon as IconName, lastSavedAt: saved.get(r.slug) ?? null }));
+}
+
+export async function getLeaderList() {
+  const [rows, saved] = await Promise.all([
+    requireDb()
+      .select({
+        slug: schema.leaders.slug,
+        name: schema.leaders.name,
+        role: schema.leaders.role,
+        photo: schema.leaders.imageUrl,
+        photoAlt: schema.leaders.imageAlt,
+      })
+      .from(schema.leaders)
+      .orderBy(asc(schema.leaders.sortOrder)),
+    lastSavedById("leader"),
+  ]);
+  return rows.map((r) => ({ ...r, lastSavedAt: saved.get(r.slug) ?? null }));
 }

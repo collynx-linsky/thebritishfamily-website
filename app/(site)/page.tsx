@@ -324,9 +324,9 @@ export default async function HomePage() {
         {/* 7. Our work in pictures */}
         <Section tone="mist" labelledBy="gallery-title">
           <div data-reveal="up" className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <SectionHeading id="gallery-title" eyebrow="Gallery" title="Our work in pictures" />
+            <SectionHeading id="gallery-title" eyebrow={home.gallery.eyebrow} title={home.gallery.title} />
             <ArrowLink href="/gallery" fx>
-              View the full gallery
+              {home.gallery.linkLabel}
             </ArrowLink>
           </div>
           <div className="mt-4">
@@ -426,9 +426,9 @@ export default async function HomePage() {
         {latestNews.length ? (
           <Section tone="mist" labelledBy="news-title">
             <div data-reveal="up" className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <SectionHeading id="news-title" eyebrow="News" title="Latest news and updates" />
+              <SectionHeading id="news-title" eyebrow={home.news.eyebrow} title={home.news.title} />
               <ArrowLink href="/news" fx>
-                All news
+                {home.news.linkLabel}
               </ArrowLink>
             </div>
             <ul data-reveal="stagger" className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

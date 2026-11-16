@@ -5,10 +5,20 @@ import { SignOutOtherDevices } from "@/components/admin/SignOutOtherDevices";
 import { verifySession } from "@/lib/auth/dal";
 import { requireDb, schema } from "@/lib/db";
 import { formatRelative } from "@/lib/format";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/PageSkeleton";
 
 export const metadata: Metadata = { title: "Account" };
 
-export default async function AccountPage() {
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AccountPageContent />
+    </Suspense>
+  );
+}
+
+async function AccountPageContent() {
   const session = await verifySession();
   const [user] = await requireDb()
     .select({ passwordChangedAt: schema.adminUsers.passwordChangedAt })

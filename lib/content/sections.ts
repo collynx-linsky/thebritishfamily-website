@@ -67,7 +67,7 @@ export const companySchema = z.object({
   shortName: text(12),
   alternateNames: z.array(text(80)).max(4),
   wordmark: z.tuple([text(20), text(20)]),
-  established: z.int().min(1900).max(2100),
+  established: z.int("Enter a year, for example 2020.").min(1900, "Enter a year after 1900.").max(2100, "Enter a year before 2100."),
   headquarters: text(60),
   tagline: text(140),
   description: text(260),
@@ -101,6 +101,8 @@ export const homeSchema = z.object({
   }),
   about: z.object({ eyebrow: text(40), title: text(90), link }),
   sectors: z.object({ eyebrow: text(40), titleLead: text(60), titleAccent: text(24) }),
+  gallery: z.object({ eyebrow: text(40), title: text(60), linkLabel: text(40) }),
+  news: z.object({ eyebrow: text(40), title: text(60), linkLabel: text(40) }),
   mission: z.object({ eyebrow: text(40), title: text(80) }),
   leadership: z.object({ eyebrow: text(40), title: text(60), link }),
   cta: z.object({ title: text(60), body: text(140), emailLabel: text(24) }),
@@ -154,6 +156,36 @@ export const pagesSchema = z.object({
   ...Object.fromEntries(PAGE_KEYS.map((k) => [k, pageCopy])) as Record<PageKey, typeof pageCopy>,
 });
 
+/* ------------------------------------------------------------------
+   Repeatable items stored as rows (sectors, leaders, hero slides)
+   ------------------------------------------------------------------ */
+
+export const sectorSchema = z.object({
+  name: text(60),
+  shortName: text(30),
+  icon,
+  summary: text(160),
+  headline: text(90),
+  overview: z.array(text(500)).min(1, "Add at least one paragraph.").max(5),
+  focus: z.array(text(60)).min(1, "Add at least one focus area.").max(8),
+  /** Null until a real photo is uploaded (a sample photo is shown meanwhile) */
+  image: imageRef.nullable(),
+});
+
+export const leaderSchema = z.object({
+  name: text(60),
+  role: text(60),
+  summary: text(240),
+  bio: text(1000),
+  email: z.email("Enter a valid email address.").max(120, "Keep this under 120 characters."),
+  photo: imageRef,
+});
+
+export const heroSlidesSchema = z.array(imageRef).min(1, "Keep at least one slideshow photo.").max(10);
+
+export type SectorItem = z.infer<typeof sectorSchema>;
+export type LeaderItem = z.infer<typeof leaderSchema>;
+
 export const sectionSchemas = {
   company: companySchema,
   home: homeSchema,
@@ -203,6 +235,8 @@ export const sectionDefaults: SectionData = {
     highlights: { ...home.highlights, projectsLink: { ...home.highlights.projectsLink } },
     about: { ...home.about, link: { ...home.about.link } },
     sectors: { ...home.sectors },
+    gallery: { eyebrow: "Gallery", title: "Our work in pictures", linkLabel: "View the full gallery" },
+    news: { eyebrow: "News", title: "Latest news and updates", linkLabel: "All news" },
     mission: { ...home.mission },
     leadership: { ...home.leadership, link: { ...home.leadership.link } },
     cta: { ...cta },

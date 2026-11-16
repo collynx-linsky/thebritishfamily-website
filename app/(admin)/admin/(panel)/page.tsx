@@ -5,6 +5,8 @@ import { ADMIN_AREAS } from "@/lib/admin/areas";
 import { getAreaStatuses } from "@/lib/admin/queries";
 import { verifySession } from "@/lib/auth/dal";
 import { formatRelative } from "@/lib/format";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/admin/PageSkeleton";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -17,7 +19,15 @@ const itemNoun: Record<string, [string, string]> = {
   downloads: ["document", "documents"],
 };
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
+  );
+}
+
+async function DashboardPageContent() {
   const session = await verifySession();
   const statuses = await getAreaStatuses();
   const now = new Date();
