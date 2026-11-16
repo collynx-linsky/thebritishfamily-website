@@ -46,6 +46,9 @@
   /* Elevation */
   --shadow-card: 0 10px 30px rgb(20 33 61 / 0.08);
   --shadow-lift: 0 18px 40px rgb(20 33 61 / 0.14);
+
+  /* Motion: a long, soft deceleration (no overshoot, no bounce) */
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ------------------------------------------------------------------
@@ -156,5 +159,286 @@
       animation-timeline: scroll(root);
       animation-range: 0 120px;
     }
+  }
+}
+
+/* ------------------------------------------------------------------
+   Home page motion (components/home/*).
+   Only transform and opacity are animated. Every hidden state is opt-in:
+   MotionRoot adds data-state="hidden" after hydration, and only to
+   elements below the fold, so nothing flashes and nothing is hidden
+   without JavaScript or with reduced motion.
+   ------------------------------------------------------------------ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slow-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes slide-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes shine {
+  0% {
+    opacity: 0;
+    transform: translateX(0) skewX(-20deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(420%) skewX(-20deg);
+  }
+}
+
+@keyframes parallax-y {
+  from {
+    transform: translate3d(0, -7%, 0) scale(1.16);
+  }
+  to {
+    transform: translate3d(0, 7%, 0) scale(1.16);
+  }
+}
+
+@layer components {
+  /* Premium buttons: sliding fill (::before) and a shine sweep (::after) */
+  .btn-fx {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    transition:
+      transform 500ms var(--ease-premium),
+      color 400ms var(--ease-premium),
+      border-color 400ms var(--ease-premium);
+  }
+  .btn-fx::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--btn-fill, transparent);
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 550ms var(--ease-premium);
+  }
+  .btn-fx::after {
+    content: "";
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: -60%;
+    width: 40%;
+    pointer-events: none;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.5), transparent);
+    opacity: 0;
+    transform: skewX(-20deg);
+  }
+  .btn-fx:hover::before,
+  .btn-fx:focus-visible::before {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+  .btn-fx .btn-fx-arrow {
+    transition: transform 500ms var(--ease-premium);
+  }
+  .btn-fx:hover .btn-fx-arrow,
+  .btn-fx:focus-visible .btn-fx-arrow {
+    transform: translateX(5px);
+  }
+
+  /* Card lift: the shadow lives on a pseudo-element so only opacity animates */
+  .lift {
+    position: relative;
+    isolation: isolate;
+    transition: transform 500ms var(--ease-premium);
+  }
+  .lift::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: var(--shadow-lift);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 500ms var(--ease-premium);
+  }
+  .lift:hover::after,
+  .lift:focus-within::after {
+    opacity: 1;
+  }
+
+  /* Auto-scrolling strip */
+  .marquee[data-paused] .marquee-track,
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* Hero slides: crossfade; the slow zoom continues while a slide fades out */
+  .hero-slide {
+    opacity: 0;
+    transition: opacity 1200ms var(--ease-premium);
+  }
+  .hero-slide[data-phase="active"] {
+    opacity: 1;
+  }
+  .hero-progress {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  .hero-progress[data-active] {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-rise {
+    /* backwards (not both): once finished, the element's own hover transforms apply again */
+    animation: rise-in 900ms var(--ease-premium) backwards;
+    animation-delay: var(--delay, 0ms);
+  }
+
+  .hero-slide[data-phase="active"] .hero-zoom,
+  .hero-slide[data-phase="leaving"] .hero-zoom {
+    animation: slow-zoom 9s linear forwards;
+  }
+  .hero-progress[data-active] {
+    transform: scaleX(0);
+    animation: slide-progress var(--slide-ms, 6500ms) linear forwards;
+  }
+  [data-paused] .hero-progress[data-active] {
+    animation-play-state: paused;
+  }
+
+  .marquee-track {
+    animation: marquee 48s linear infinite;
+  }
+
+  .btn-fx:hover,
+  .btn-fx:focus-visible {
+    transform: translateY(-2px);
+  }
+  .btn-fx:hover::after,
+  .btn-fx:focus-visible::after {
+    animation: shine 850ms var(--ease-premium);
+  }
+
+  .lift:hover,
+  .lift:focus-within {
+    transform: translateY(-6px);
+  }
+
+  /* Scroll reveals */
+  [data-reveal],
+  [data-reveal="stagger"] > *,
+  [data-reveal="wipe"] > :first-child {
+    transition:
+      opacity 700ms var(--ease-premium),
+      transform 850ms var(--ease-premium);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal="up"][data-state="hidden"] {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+  }
+  [data-reveal="left"][data-state="hidden"] {
+    opacity: 0;
+    transform: translate3d(-48px, 0, 0);
+  }
+  [data-reveal="right"][data-state="hidden"] {
+    opacity: 0;
+    transform: translate3d(48px, 0, 0);
+  }
+  [data-reveal="scale"][data-state="hidden"] {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  /* Children appear one after another */
+  [data-reveal="stagger"] > * {
+    transition-delay: calc(var(--reveal-delay, 0ms) + var(--i, 0) * 110ms);
+  }
+  [data-reveal="stagger"][data-state="hidden"] > * {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0);
+  }
+  [data-reveal="stagger"][data-stagger="scale"][data-state="hidden"] > * {
+    transform: scale(0.86);
+  }
+  [data-reveal="stagger"] > :nth-child(2) { --i: 1; }
+  [data-reveal="stagger"] > :nth-child(3) { --i: 2; }
+  [data-reveal="stagger"] > :nth-child(4) { --i: 3; }
+  [data-reveal="stagger"] > :nth-child(5) { --i: 4; }
+  [data-reveal="stagger"] > :nth-child(6) { --i: 5; }
+  [data-reveal="stagger"] > :nth-child(7) { --i: 6; }
+  [data-reveal="stagger"] > :nth-child(8) { --i: 7; }
+
+  /* Image wipe: a navy cover slides away while the photo settles from 1.15x */
+  [data-reveal="wipe"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: var(--wipe-color, var(--color-navy));
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 950ms var(--ease-premium);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal="wipe"][data-state="hidden"]::after {
+    transform: scaleX(1);
+    transition: none;
+  }
+  [data-reveal="wipe"] > :first-child {
+    transition-duration: 1300ms;
+  }
+  [data-reveal="wipe"][data-state="hidden"] > :first-child {
+    transform: scale(1.15);
+  }
+
+  @supports (animation-timeline: view()) {
+    .parallax {
+      animation: parallax-y linear both;
+      animation-timeline: view();
+    }
+  }
+}
+
+/* Reduced motion: the strip becomes a still, swipeable row */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-viewport {
+    overflow-x: auto;
+  }
+  .marquee-clone {
+    display: none;
   }
 }

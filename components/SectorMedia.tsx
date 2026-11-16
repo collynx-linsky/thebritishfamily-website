@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Sector } from "@/lib/site";
 import { Icon } from "./Icon";
+import { PhotoPlaceholder } from "./home/PhotoPlaceholder";
 
 /**
  * A sector's photo, or a branded navy panel when no photo exists yet.
@@ -11,15 +12,31 @@ export function SectorMedia({
   sizes,
   preload = false,
   zoomOnHover = false,
+  strongZoom = false,
+  placeholderLabel,
 }: {
   sector: Sector;
   sizes: string;
   preload?: boolean;
   zoomOnHover?: boolean;
+  /** Slower, deeper zoom (home page showcase cards) */
+  strongZoom?: boolean;
+  /** When set and there is no photo, show a labelled "photo coming soon" tile */
+  placeholderLabel?: string;
 }) {
-  const zoom = zoomOnHover
-    ? "transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.04]"
-    : "";
+  const zoom = !zoomOnHover
+    ? ""
+    : strongZoom
+      ? "transition-transform duration-700 ease-premium motion-safe:group-hover:scale-[1.08]"
+      : "transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.04]";
+
+  if (!sector.image && placeholderLabel) {
+    return (
+      <div className={`absolute inset-0 ${zoom}`}>
+        <PhotoPlaceholder icon={sector.icon} label={placeholderLabel} />
+      </div>
+    );
+  }
 
   if (sector.image) {
     return (

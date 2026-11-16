@@ -4,6 +4,20 @@ The site was built only from facts in `docs/content.md` (the company profile). E
 
 When an answer comes back, update `lib/site.ts`; most items need no component changes.
 
+## Home page photo placeholders
+
+The home page shows branded navy/gold tiles marked "Photo coming soon" or "Project photo coming soon" wherever a real photo is still needed. Each is defined in `lib/home-media.ts` (gallery) or comes from the sector having no `image` in `lib/site.ts`. Replacing a placeholder needs only a new photo file and a one-line change there.
+
+| # | Where on the home page | Label shown | Photo needed |
+| --- | --- | --- | --- |
+| P1 | Sectors grid, "Educational services" card | Photo coming soon | Educational services in action (training, classroom or partner institution, with permission) |
+| P2 | Sector strip (scrolling band), "Educational services" thumbnail | Photo coming soon (icon tile) | Same photo as P1 works here |
+| P3 | "Our work in pictures" gallery, tile 2 | Photo coming soon (Educational services) | Same photo as P1, or a second education photo |
+| P4 | "Our work in pictures" gallery, tile 4 | Project photo coming soon (Mining and chemicals) | A real BFL mining or chemical supply site, delivery or product photo |
+| P5 | "Our work in pictures" gallery, tile 6 | Project photo coming soon (Construction) | A real BFL construction project photo |
+
+The home page also reuses the existing photos (skyline, mining, construction, electronics) in the hero slideshow, the strip and the gallery. Because they are low resolution, they are kept small or under overlays. Higher-resolution originals (see item 2 below) would make the slideshow noticeably sharper. A real BFL photo for each sector would also let the gallery show the company's own work rather than generic scenes.
+
 ## Photos
 
 1. **Educational services photo.** There is no photo for this sector, so the site shows a branded navy panel instead. A real photo (a training session, classroom, or a partner institution, used with permission) would replace it everywhere. In `lib/site.ts`, set `image` on the `educational-services` sector.
