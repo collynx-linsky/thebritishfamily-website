@@ -9,17 +9,16 @@
  *    friends), so a missing or partial record never blanks a section,
  * 3. is cached with "use cache" and tagged, so pages stay static and the
  *    admin panel refreshes exactly what changed with updateTag(tag),
- * 4. on a database error logs it and serves the defaults with a short cache
- *    life, so the site keeps working and heals itself when the database is
- *    back.
+ * 4. on a database error serves the defaults (see lib/content/read.ts).
  */
 import "server-only";
 import { asc, count, eq } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheTag } from "next/cache";
 import { getDb, schema } from "../db";
 import type { SectionKey } from "../db/schema";
 import { galleryPhotos as defaultGallery, heroSlides as defaultHeroSlides, homeGallery } from "../media";
 import { leaders as defaultLeaders, sectors as defaultSectors, type IconName, type ImageAsset, type Leader, type Sector } from "../site";
+import { readWithFallback } from "./read";
 import { parseSection, sectionDefaults, type SectionData } from "./sections";
 
 /** Cache tags. The admin panel calls updateTag() with these after a save. */
@@ -31,13 +30,8 @@ export const TAGS = {
   gallery: "content:gallery",
 } as const;
 
-function onDbError(what: string, error: unknown) {
-  console.error(`[content] could not read ${what} from the database; serving defaults`, error);
-  cacheLife("minutes"); // retry soon instead of caching the fallback for long
-}
-
 /** True when the database has been seeded (used to tell "empty" from "never set up"). */
-async function isSeeded(): Promise<boolean> {
+export async function isSeeded(): Promise<boolean> {
   const db = getDb();
   if (!db) return false;
   const [{ value }] = await db.select({ value: count() }).from(schema.contentSections);
@@ -58,22 +52,17 @@ const toImage = (row: { imageUrl: string; imageAlt: string; imageWidth: number; 
 async function readSection<K extends SectionKey>(key: K): Promise<SectionData[K]> {
   "use cache";
   cacheTag(TAGS.section(key));
-  const db = getDb();
-  if (!db) {
-    cacheLife("max");
-    return sectionDefaults[key];
-  }
-  try {
-    const [row] = await db
-      .select({ data: schema.contentSections.data })
-      .from(schema.contentSections)
-      .where(eq(schema.contentSections.key, key));
-    cacheLife("max");
-    return parseSection(key, row?.data);
-  } catch (error) {
-    onDbError(`section "${key}"`, error);
-    return sectionDefaults[key];
-  }
+  return readWithFallback(
+    `section "${key}"`,
+    () => sectionDefaults[key],
+    async (db) => {
+      const [row] = await db
+        .select({ data: schema.contentSections.data })
+        .from(schema.contentSections)
+        .where(eq(schema.contentSections.key, key));
+      return parseSection(key, row?.data);
+    },
+  );
 }
 
 export const getCompany = () => readSection("company");
@@ -85,8 +74,6 @@ export type Company = SectionData["company"];
 export type HomeContent = SectionData["home"];
 export type AboutContent = SectionData["about"];
 export type PagesContent = SectionData["pages"];
-
-/** Last-updated times for the admin dashboard (not cached). */
 export type { SectionData };
 
 /* ------------------------------------------------------------------
@@ -96,14 +83,8 @@ export type { SectionData };
 export async function getSectors(): Promise<Sector[]> {
   "use cache";
   cacheTag(TAGS.sectors);
-  const db = getDb();
-  if (!db) {
-    cacheLife("max");
-    return defaultSectors;
-  }
-  try {
+  return readWithFallback("sectors", () => defaultSectors, async (db) => {
     const rows = await db.select().from(schema.sectors).orderBy(asc(schema.sectors.sortOrder));
-    cacheLife("max");
     if (!rows.length) return defaultSectors;
     return rows.map((r) => {
       const fallback = defaultSectors.find((s) => s.slug === r.slug);
@@ -122,10 +103,7 @@ export async function getSectors(): Promise<Sector[]> {
             : null,
       };
     });
-  } catch (error) {
-    onDbError("sectors", error);
-    return defaultSectors;
-  }
+  });
 }
 
 export async function getSector(slug: string): Promise<Sector | undefined> {
@@ -135,14 +113,8 @@ export async function getSector(slug: string): Promise<Sector | undefined> {
 export async function getLeaders(): Promise<Leader[]> {
   "use cache";
   cacheTag(TAGS.leaders);
-  const db = getDb();
-  if (!db) {
-    cacheLife("max");
-    return defaultLeaders;
-  }
-  try {
+  return readWithFallback("leaders", () => defaultLeaders, async (db) => {
     const rows = await db.select().from(schema.leaders).orderBy(asc(schema.leaders.sortOrder));
-    cacheLife("max");
     if (!rows.length) return defaultLeaders;
     return rows.map((r) => ({
       slug: r.slug,
@@ -153,10 +125,7 @@ export async function getLeaders(): Promise<Leader[]> {
       email: r.email,
       photo: toImage(r),
     }));
-  } catch (error) {
-    onDbError("leaders", error);
-    return defaultLeaders;
-  }
+  });
 }
 
 /* ------------------------------------------------------------------
@@ -166,19 +135,10 @@ export async function getLeaders(): Promise<Leader[]> {
 export async function getHeroSlides(): Promise<ImageAsset[]> {
   "use cache";
   cacheTag(TAGS.heroSlides);
-  const db = getDb();
-  if (!db) {
-    cacheLife("max");
-    return defaultHeroSlides;
-  }
-  try {
+  return readWithFallback("hero slides", () => defaultHeroSlides, async (db) => {
     const rows = await db.select().from(schema.heroSlides).orderBy(asc(schema.heroSlides.sortOrder));
-    cacheLife("max");
     return rows.length ? rows.map(toImage) : defaultHeroSlides;
-  } catch (error) {
-    onDbError("hero slides", error);
-    return defaultHeroSlides;
-  }
+  });
 }
 
 export type GalleryItem = { image: ImageAsset; sectorSlug: string | null; showOnHome: boolean };
@@ -196,23 +156,9 @@ const defaultGalleryItems = (): GalleryItem[] => {
 export async function getGallery(): Promise<GalleryItem[]> {
   "use cache";
   cacheTag(TAGS.gallery);
-  const db = getDb();
-  if (!db) {
-    cacheLife("max");
-    return defaultGalleryItems();
-  }
-  try {
+  return readWithFallback("gallery", defaultGalleryItems, async (db) => {
     const rows = await db.select().from(schema.galleryPhotos).orderBy(asc(schema.galleryPhotos.sortOrder));
-    if (!rows.length && !(await isSeeded())) {
-      cacheLife("max");
-      return defaultGalleryItems();
-    }
-    cacheLife("max");
+    if (!rows.length && !(await isSeeded())) return defaultGalleryItems();
     return rows.map((r) => ({ image: toImage(r), sectorSlug: r.sectorSlug, showOnHome: r.showOnHome }));
-  } catch (error) {
-    onDbError("gallery", error);
-    return defaultGalleryItems();
-  }
+  });
 }
-
-export { isSeeded };

@@ -7,6 +7,6 @@ import { SiteChrome } from "@/components/SiteChrome";
  */
 export const ensureStatic = "navigation";
 
-export default function SiteLayout({ children }: LayoutProps<"/">) {
+export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return <SiteChrome>{children}</SiteChrome>;
 }

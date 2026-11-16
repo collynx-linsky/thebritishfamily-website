@@ -7,8 +7,9 @@
  */
 import "server-only";
 import { desc } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
-import { getDb, schema } from "../db";
+import { cacheTag } from "next/cache";
+import { schema } from "../db";
+import { readWithFallback } from "./read";
 import { defaultNews } from "../defaults/news";
 import { isSeeded } from "./site-content";
 import type { NewsArticle, NewsCategory } from "./types";
@@ -19,23 +20,13 @@ export const NEWS_TAG = "news";
 export async function getNewsArticles(): Promise<NewsArticle[]> {
   "use cache";
   cacheTag(NEWS_TAG);
-  const db = getDb();
-  const sortNewest = (list: NewsArticle[]) =>
-    [...list].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
-  if (!db) {
-    cacheLife("max");
-    return sortNewest(defaultNews);
-  }
-  try {
+  const defaults = () => [...defaultNews].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return readWithFallback("news", defaults, async (db) => {
     const rows = await db
       .select()
       .from(schema.newsArticles)
       .orderBy(desc(schema.newsArticles.publishedAt), desc(schema.newsArticles.id));
-    if (!rows.length && !(await isSeeded())) {
-      cacheLife("max");
-      return sortNewest(defaultNews);
-    }
-    cacheLife("max");
+    if (!rows.length && !(await isSeeded())) return defaults();
     return rows.map((r) => ({
       slug: r.slug,
       title: r.title,
@@ -45,13 +36,8 @@ export async function getNewsArticles(): Promise<NewsArticle[]> {
       body: r.body,
       image: { src: r.imageUrl, alt: r.imageAlt, width: r.imageWidth, height: r.imageHeight },
     }));
-  } catch (error) {
-    console.error("[content] could not read news from the database; serving defaults", error);
-    cacheLife("minutes");
-    return sortNewest(defaultNews);
-  }
+  });
 }
-
 export async function getNewsArticle(slug: string): Promise<NewsArticle | undefined> {
   const articles = await getNewsArticles();
   return articles.find((article) => article.slug === slug);

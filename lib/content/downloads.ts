@@ -7,8 +7,9 @@
  */
 import "server-only";
 import { asc, desc } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
-import { getDb, schema } from "../db";
+import { cacheTag } from "next/cache";
+import { schema } from "../db";
+import { readWithFallback } from "./read";
 import { defaultDownloads } from "../defaults/downloads";
 import { isSeeded } from "./site-content";
 import { downloadCategories, type DownloadCategory, type DownloadItem } from "./types";
@@ -24,21 +25,13 @@ const sortItems = (items: DownloadItem[]) =>
 export async function getDownloads(): Promise<DownloadItem[]> {
   "use cache";
   cacheTag(DOWNLOADS_TAG);
-  const db = getDb();
-  if (!db) {
-    cacheLife("max");
-    return sortItems(defaultDownloads);
-  }
-  try {
+  const defaults = () => sortItems(defaultDownloads);
+  return readWithFallback("downloads", defaults, async (db) => {
     const rows = await db
       .select()
       .from(schema.downloads)
       .orderBy(desc(schema.downloads.featured), asc(schema.downloads.sortOrder), desc(schema.downloads.publishedAt));
-    if (!rows.length && !(await isSeeded())) {
-      cacheLife("max");
-      return sortItems(defaultDownloads);
-    }
-    cacheLife("max");
+    if (!rows.length && !(await isSeeded())) return defaults();
     return rows.map((r) => ({
       id: r.key,
       title: r.title,
@@ -54,13 +47,8 @@ export async function getDownloads(): Promise<DownloadItem[]> {
       publishedAt: r.publishedAt,
       featured: r.featured,
     }));
-  } catch (error) {
-    console.error("[content] could not read downloads from the database; serving defaults", error);
-    cacheLife("minutes");
-    return sortItems(defaultDownloads);
-  }
+  });
 }
-
 /** Documents grouped by category, in the display order of the categories. */
 export async function getDownloadsByCategory(): Promise<
   { category: (typeof downloadCategories)[number]; items: DownloadItem[] }[]

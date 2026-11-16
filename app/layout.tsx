@@ -46,7 +46,7 @@ export const viewport: Viewport = {
   themeColor: "#1E3A6E",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // data-scroll-behavior: Next.js disables the CSS smooth scrolling during route transitions
     <html
