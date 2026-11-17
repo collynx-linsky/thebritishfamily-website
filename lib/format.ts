@@ -34,3 +34,14 @@ export function formatBytes(bytes: number): string {
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${bytes} bytes`;
 }
+
+/** The company's time zone (East Africa Time, UTC+3, no daylight saving). Servers run on UTC. */
+export const SITE_TIME_ZONE = "Africa/Dar_es_Salaam";
+
+/** Start of the current month in the company's time zone, as a Date */
+export function startOfMonthInSiteZone(now: Date = new Date()): Date {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: SITE_TIME_ZONE, year: "numeric", month: "numeric" }).formatToParts(now);
+  const year = Number(parts.find((p) => p.type === "year")?.value);
+  const month = Number(parts.find((p) => p.type === "month")?.value);
+  return new Date(Date.UTC(year, month - 1, 1, -3)); // midnight EAT = 21:00 UTC the day before
+}

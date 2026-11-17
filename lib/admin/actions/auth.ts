@@ -11,7 +11,8 @@ import { requireDb, schema } from "@/lib/db";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth/dal";
 import { MAX_PASSWORD_LENGTH, verifyPassword } from "@/lib/auth/password";
 import { attemptKeys, checkThrottle, clientIp, recordAttempt } from "@/lib/auth/rate-limit";
-import { createSession, destroyOtherSessions, destroySession } from "@/lib/auth/session";
+import { createSession, destroyOtherSessions, destroySession, getSession } from "@/lib/auth/session";
+import { recordActivity } from "@/lib/admin/activity";
 
 export type LoginState = { error?: string; email?: string };
 
@@ -73,11 +74,14 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   if (!ok || !user) return { error: WRONG_CREDENTIALS, email };
 
   await createSession(user.id);
+  await recordActivity({ userId: user.id, action: "auth.signin", summary: "Signed in" });
   redirect(safeNext(next));
 }
 
 export async function logout(): Promise<void> {
+  const session = await getSession();
   await destroySession();
+  if (session) await recordActivity({ userId: session.userId, action: "auth.signout", summary: "Signed out" });
   redirect("/admin/login?signedOut=1");
 }
 
@@ -87,6 +91,14 @@ export async function signOutOtherDevices(): Promise<ActionResult> {
   try {
     const session = await requireAdmin();
     const count = await destroyOtherSessions(session);
+    if (count) {
+      await recordActivity({
+        userId: session.userId,
+        action: "auth.devices",
+        summary: `Signed out of ${count} other device${count === 1 ? "" : "s"}`,
+        href: "/admin/account",
+      });
+    }
     return {
       ok: true,
       message: count ? `Signed out of ${count} other device${count === 1 ? "" : "s"}.` : "You were not signed in anywhere else.",

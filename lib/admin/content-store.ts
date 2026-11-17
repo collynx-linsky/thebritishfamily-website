@@ -271,13 +271,23 @@ export async function loadEditor<const R extends EntityRef[]>(
  * Save new versions in one transaction, snapshotting each changed entity
  * first. Unchanged entities are skipped. Returns the refs that changed.
  */
-export async function saveEntities(changes: { ref: EntityRef; value: unknown }[]): Promise<EntityRef[]> {
+export async function saveEntities(
+  changes: { ref: EntityRef; value: unknown }[],
+  /** Who made the change, and a plain-language description, kept with the previous version */
+  meta: { userId: number | null; summary: string } = { userId: null, summary: "" },
+): Promise<EntityRef[]> {
   const changed: EntityRef[] = [];
   await requireDb().transaction(async (tx) => {
     for (const { ref, value } of changes) {
       const current = await read(tx, ref);
       if (stable(current) === stable(value)) continue;
-      await tx.insert(schema.contentHistory).values({ entityType: ref.type, entityId: ref.id, snapshot: current });
+      await tx.insert(schema.contentHistory).values({
+        entityType: ref.type,
+        entityId: ref.id,
+        snapshot: current,
+        savedBy: meta.userId,
+        summary: meta.summary || null,
+      });
       await write(tx, ref, value);
       changed.push(ref);
     }

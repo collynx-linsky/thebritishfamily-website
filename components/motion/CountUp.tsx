@@ -15,7 +15,16 @@ import { useEffect, useRef } from "react";
  * With reduced motion, or if the number is already on screen when the page
  * loads, it simply stays at the final value.
  */
-export function CountUp({ value, durationMs = 1600 }: { value: number; durationMs?: number }) {
+export function CountUp({
+  value,
+  durationMs = 1600,
+  onLoad = false,
+}: {
+  value: number;
+  durationMs?: number;
+  /** Count up as soon as the page loads, even when already on screen (dashboard figures) */
+  onLoad?: boolean;
+}) {
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -23,7 +32,7 @@ export function CountUp({ value, durationMs = 1600 }: { value: number; durationM
     const number = wrapper?.firstElementChild as HTMLElement | null;
     if (!wrapper || !number || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const { top, bottom } = wrapper.getBoundingClientRect();
-    if (top < window.innerHeight && bottom > 0) return;
+    if (!onLoad && top < window.innerHeight && bottom > 0) return;
 
     // Animation mode: the moving number is visual only; screen readers get the final value
     const spoken = document.createElement("span");
@@ -62,7 +71,7 @@ export function CountUp({ value, durationMs = 1600 }: { value: number; durationM
       cancelAnimationFrame(frame);
       finish();
     };
-  }, [value, durationMs]);
+  }, [value, durationMs, onLoad]);
 
   return (
     <span ref={ref}>

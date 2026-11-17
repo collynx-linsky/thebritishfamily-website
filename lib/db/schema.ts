@@ -51,6 +51,8 @@ export const adminUsers = pgTable("admin_users", {
   passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }).notNull().defaultNow(),
   /** Name shown in the admin (user menu, greetings, "saved by"). Existing accounts get the default. */
   displayName: text("display_name").notNull().default("Office"),
+  /** When the first-visit welcome was dismissed (null: show it) */
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   ...timestamps,
 });
 
@@ -218,9 +220,45 @@ export const contentHistory = pgTable(
     /** The full previous version; null means the item did not exist yet */
     snapshot: jsonb("snapshot").$type<unknown>(),
     savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Who made the change that replaced this version (null for older rows) */
+    savedBy: integer("saved_by").references(() => adminUsers.id, { onDelete: "set null" }),
+    /** Plain-language description of that change, e.g. "Saved the Home page" */
+    summary: text("summary"),
   },
   (t) => [index("content_history_entity_idx").on(t.entityType, t.entityId, t.savedAt)],
 );
+
+/**
+ * A readable timeline of what happened in the admin: content saves, undos
+ * and restores, sign-ins and account changes. Shown on the dashboard and
+ * the Activity page. Old entries are pruned after a year.
+ */
+export const activityLog = pgTable(
+  "activity_log",
+  {
+    id: serial("id").primaryKey(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    userId: integer("user_id").references(() => adminUsers.id, { onDelete: "set null" }),
+    /** Machine-readable kind, e.g. "content.save", "auth.signin" */
+    action: text("action").notNull(),
+    /** Plain-language line, e.g. "Saved the Home page" */
+    summary: text("summary").notNull(),
+    /** Admin page about the item, when there is one */
+    href: text("href"),
+  },
+  (t) => [index("activity_log_at_idx").on(t.at)],
+);
+
+/**
+ * Items the editor has marked as reviewed on the dashboard's "Needs
+ * attention" list (sample photos, sample news, details to confirm). Keyed
+ * by a stable item key, e.g. "sector-photo:construction".
+ */
+export const contentReviews = pgTable("content_reviews", {
+  key: text("key").primaryKey(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull().defaultNow(),
+  reviewedBy: integer("reviewed_by").references(() => adminUsers.id, { onDelete: "set null" }),
+});
 
 export const UPLOAD_KINDS = ["image", "document"] as const;
 export type UploadKind = (typeof UPLOAD_KINDS)[number];

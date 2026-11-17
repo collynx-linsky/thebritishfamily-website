@@ -33,7 +33,7 @@ function Heading({ name, value }: { name: "about" | "sectors" | "mission" | "lea
 export function HomeForm({ values: [home, slides], ...state }: EditorProps<[HomeSection, ImageRef[]]>) {
   return (
     <EditorShell {...state} save={saveHome} undo={() => undoLastChange("home")} restore={() => restoreOriginal("home")}>
-      <Group title="Main headline" description="The large text over the slideshow at the top of the page.">
+      <Group id="main-headline" title="Main headline" description="The large text over the slideshow at the top of the page.">
         <TextField name="hero.eyebrow" label="Small label above the headline" defaultValue={home.hero.eyebrow} max={m("hero.eyebrow")} />
         <TextField name="hero.titleLead" label="Headline, first line" defaultValue={home.hero.titleLead} max={m("hero.titleLead")} />
         <Row>
@@ -46,6 +46,7 @@ export function HomeForm({ values: [home, slides], ...state }: EditorProps<[Home
       </Group>
 
       <Group
+        id="slideshow-photos"
         title="Slideshow photos"
         description="The photos behind the headline, in the order they appear. Change the order, remove a photo, or edit its description. Adding and replacing photos arrives with photo uploads."
       >

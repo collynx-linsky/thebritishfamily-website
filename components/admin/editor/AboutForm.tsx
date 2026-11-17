@@ -103,7 +103,7 @@ export function AboutForm({ values: [about], ...state }: EditorProps<[AboutSecti
         />
       </Group>
 
-      <Group title="Photos" description="Edit each photo's description. Replacing the photos themselves arrives with photo uploads." collapsible>
+      <Group id="photos" title="Photos" description="Edit each photo's description. Replacing the photos themselves arrives with photo uploads." collapsible>
         {IMAGES.map(({ key, label }) => (
           <ImageAltField key={key} name={`images.${key}`} label={label} image={about.images[key]} max={m(`images.${key}.alt`)} />
         ))}

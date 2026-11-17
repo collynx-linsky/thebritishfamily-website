@@ -49,7 +49,10 @@ export function buildNavigation(input: {
   return [
     {
       label: "Overview",
-      entries: [{ href: "/admin", label: "Dashboard", icon: "spark", keywords: ["home", "start", "overview"] }],
+      entries: [
+        { href: "/admin", label: "Dashboard", icon: "spark", keywords: ["home", "start", "overview", "attention", "launch"] },
+        { href: "/admin/activity", label: "Activity", icon: "calendar", keywords: ["history", "log", "changes", "timeline", "who"] },
+      ],
     },
     {
       label: "Website",

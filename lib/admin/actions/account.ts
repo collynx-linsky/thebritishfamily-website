@@ -6,6 +6,7 @@ import { requireDb, schema } from "@/lib/db";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth/dal";
 import { hashPassword, MAX_PASSWORD_LENGTH, passwordProblem, verifyPassword } from "@/lib/auth/password";
 import { destroyOtherSessions } from "@/lib/auth/session";
+import { recordActivity } from "@/lib/admin/activity";
 
 export type PasswordState =
   | { status: "idle" }
@@ -52,6 +53,7 @@ export async function changePassword(_prev: PasswordState, formData: FormData): 
       .set({ passwordHash: await hashPassword(next), passwordChangedAt: new Date(), updatedAt: new Date() })
       .where(eq(schema.adminUsers.id, session.userId));
     const others = await destroyOtherSessions(session);
+    await recordActivity({ userId: session.userId, action: "auth.password", summary: "Changed the password", href: "/admin/account" });
     return {
       status: "saved",
       message: `Your password has been changed.${others ? ` ${others} other device${others === 1 ? " was" : "s were"} signed out.` : ""}`,

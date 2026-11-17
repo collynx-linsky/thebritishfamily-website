@@ -1,12 +1,19 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { eq } from "drizzle-orm";
+import { Suspense } from "react";
+import { AttentionPanel } from "@/components/admin/dashboard/AttentionPanel";
+import { FirstVisitWelcome } from "@/components/admin/dashboard/FirstVisitWelcome";
+import { Greeting } from "@/components/admin/dashboard/Greeting";
+import { ContentOverview, LaunchChecklist, QuickActions, RecentActivity, StatCard, type OverviewRow } from "@/components/admin/dashboard/parts";
+import { PageSkeleton } from "@/components/admin/PageSkeleton";
 import { Icon } from "@/components/Icon";
+import { countContentChangesSince, listActivity } from "@/lib/admin/activity";
 import { ADMIN_AREAS } from "@/lib/admin/areas";
 import { getAreaStatuses } from "@/lib/admin/queries";
+import { countNews, getLaunchChecklist, getReviewItems } from "@/lib/admin/review";
 import { verifySession } from "@/lib/auth/dal";
-import { formatRelative } from "@/lib/format";
-import { Suspense } from "react";
-import { PageSkeleton } from "@/components/admin/PageSkeleton";
+import { requireDb, schema } from "@/lib/db";
+import { formatRelative, startOfMonthInSiteZone } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -15,93 +22,120 @@ const itemNoun: Record<string, [string, string]> = {
   sectors: ["sector", "sectors"],
   leadership: ["director", "directors"],
   gallery: ["photo", "photos"],
-  news: ["article", "articles"],
+  news: ["story", "stories"],
   downloads: ["document", "documents"],
 };
+
+/** Areas not managed in the admin yet (they say "Soon") */
+const SOON = new Set(["gallery", "news", "downloads"]);
 
 export default function DashboardPage() {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <DashboardPageContent />
+      <DashboardContent />
     </Suspense>
   );
 }
 
-async function DashboardPageContent() {
+async function DashboardContent() {
   const session = await verifySession();
-  const statuses = await getAreaStatuses();
   const now = new Date();
+  const monthStart = startOfMonthInSiteZone(now);
+  const [statuses, reviewItems, activity, changesThisMonth, newsCount, [user]] = await Promise.all([
+    getAreaStatuses(),
+    getReviewItems(),
+    listActivity(6),
+    countContentChangesSince(monthStart),
+    countNews(),
+    requireDb().select({ onboardedAt: schema.adminUsers.onboardedAt }).from(schema.adminUsers).where(eq(schema.adminUsers.id, session.userId)),
+  ]);
+  const checklist = getLaunchChecklist(reviewItems);
+  const openItems = reviewItems.filter((i) => !i.reviewed).length;
+  const doneSteps = checklist.filter((l) => l.done).length;
+  const lastChange = activity.find((a) => a.action.startsWith("content."));
+
+  const overview: OverviewRow[] = ADMIN_AREAS.map((area) => {
+    const status = statuses.find((s) => s.key === area.key);
+    const noun = itemNoun[area.key];
+    return {
+      href: area.href,
+      icon: area.icon,
+      label: area.label,
+      count: noun && status?.itemCount !== undefined ? `${status.itemCount} ${status.itemCount === 1 ? noun[0] : noun[1]}` : undefined,
+      lastChangedAt: status?.lastChangedAt ?? null,
+      soon: SOON.has(area.key),
+    };
+  });
 
   return (
-    <main id="main" className="outline-none" tabIndex={-1}>
-      <h1 className="font-display text-3xl font-extrabold text-navy">Dashboard</h1>
-      <p className="mt-2 text-muted">
-        Welcome. Choose what you want to change. Each area matches a part of the website.
-        <span className="sr-only"> Signed in as {session.email}.</span>
-      </p>
+    <main id="main" tabIndex={-1} className="flex flex-col gap-6 outline-none">
+      {/* Welcome banner */}
+      <section aria-labelledby="dashboard-title" className="on-dark relative isolate overflow-hidden rounded-2xl bg-navy-deep px-6 py-8 text-white sm:px-9 sm:py-10">
+        <span aria-hidden="true" className="absolute -top-24 -right-20 -z-10 hidden aspect-square w-80 rounded-full border-[1.5rem] border-gold sm:block" />
+        <p className="text-xs font-bold tracking-[0.18em] text-gold uppercase">Dashboard</p>
+        <h1 id="dashboard-title" className="mt-2 font-display text-3xl leading-tight font-extrabold sm:text-4xl lg:text-5xl">
+          Welcome back, {session.displayName}
+        </h1>
+        <p className="mt-3 max-w-2xl text-base text-on-navy sm:text-lg">
+          <Greeting />. Everything you change here goes live on the website as soon as you save, and every change can be undone.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener"
+            className="inline-flex min-h-12 items-center gap-2 rounded-md bg-gold px-5 font-bold text-ink transition-colors hover:bg-gold-bright"
+          >
+            Open the website
+            <Icon name="external" size={16} />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+          <a href="#attention" className="inline-flex min-h-12 items-center gap-2 rounded-md border border-white/30 px-5 font-bold text-white transition-colors hover:border-gold hover:text-gold">
+            {openItems ? `Review what needs attention (${openItems})` : "Nothing needs attention"}
+          </a>
+        </div>
+      </section>
 
-      <ul className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {ADMIN_AREAS.map((area) => {
-          const status = statuses.find((s) => s.key === area.key);
-          const noun = itemNoun[area.key];
-          return (
-            <li key={area.key}>
-              <article className="flex h-full flex-col gap-3 rounded-lg border border-line bg-white p-5 transition-shadow hover:shadow-card">
-                <div className="flex items-start gap-3">
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md bg-mist text-navy">
-                    <Icon name={area.icon} size={20} />
-                  </span>
-                  <div className="min-w-0">
-                    <h2 className="text-lg font-bold text-navy">{area.label}</h2>
-                    <p className="mt-0.5 text-sm text-muted">{area.description}</p>
-                  </div>
-                </div>
+      {user && !user.onboardedAt ? <FirstVisitWelcome /> : null}
 
-                <dl className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
-                  <div className="flex gap-1">
-                    <dt>Last changed:</dt>
-                    <dd className="font-semibold text-ink">
-                      {status?.lastChangedAt ? (
-                        <time dateTime={status.lastChangedAt.toISOString()}>{formatRelative(status.lastChangedAt, now)}</time>
-                      ) : (
-                        "not changed since setup"
-                      )}
-                    </dd>
-                  </div>
-                  {noun && status?.itemCount !== undefined ? (
-                    <div className="flex gap-1">
-                      <dt className="sr-only">Items:</dt>
-                      <dd className="font-semibold text-ink">
-                        {status.itemCount} {status.itemCount === 1 ? noun[0] : noun[1]}
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    href={area.href}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-navy-deep"
-                  >
-                    Edit
-                    <span className="sr-only"> {area.label}</span>
-                  </Link>
-                  <a
-                    href={area.viewOnSite}
-                    target="_blank"
-                    rel="noopener"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-sm px-3 text-sm font-semibold text-navy hover:bg-mist"
-                  >
-                    View on site
-                    <Icon name="external" size={14} strokeWidth={2} />
-                    <span className="sr-only"> (opens in a new tab)</span>
-                  </a>
-                </div>
-              </article>
-            </li>
-          );
-        })}
+      {/* Stat cards */}
+      <ul className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4" aria-label="At a glance">
+        <li>
+          <StatCard
+            href="/admin/activity"
+            value={changesThisMonth}
+            label={changesThisMonth === 1 ? "Change this month" : "Changes this month"}
+            detail={lastChange ? `Last: ${lastChange.summary}, ${formatRelative(lastChange.at, now)}.` : "No changes yet this month."}
+          />
+        </li>
+        <li>
+          <StatCard
+            href="#attention"
+            value={openItems}
+            label="Need attention"
+            detail={openItems ? "Sample photos, sample content and details to confirm." : "Nothing left to check."}
+            attention={openItems > 0}
+          />
+        </li>
+        <li>
+          <StatCard href="#launch" value={doneSteps} suffix={`of ${checklist.length}`} label="Launch steps done" detail="What is left before the site goes public." />
+        </li>
+        <li>
+          <StatCard href="/admin/news" value={newsCount} label={newsCount === 1 ? "News story" : "News stories"} detail="Writing and publishing news arrives soon." />
+        </li>
       </ul>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <QuickActions />
+          <ContentOverview rows={overview} now={now} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-6">
+          <AttentionPanel items={reviewItems} />
+          <LaunchChecklist lines={checklist} />
+          <RecentActivity entries={activity} now={now} />
+        </div>
+      </div>
     </main>
   );
 }

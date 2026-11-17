@@ -12,6 +12,8 @@
 import { refresh, updateTag } from "next/cache";
 import type { z } from "zod";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth/dal";
+import type { AdminSession } from "@/lib/auth/session";
+import { recordActivity } from "@/lib/admin/activity";
 import {
   defaultsFor,
   readEntity,
@@ -63,10 +65,10 @@ class InvalidInput extends Error {
   }
 }
 
-async function run(task: () => Promise<EditorResult>): Promise<EditorResult> {
+async function run(task: (session: AdminSession) => Promise<EditorResult>): Promise<EditorResult> {
   try {
-    await requireAdmin();
-    return await task();
+    const session = await requireAdmin();
+    return await task(session);
   } catch (error) {
     if (error instanceof InvalidInput) {
       const n = Object.keys(error.fields).length;
@@ -90,10 +92,34 @@ function validate<S extends z.ZodType>(schema: S, value: unknown, prefix = ""): 
   return result.data;
 }
 
-async function saveAll(changes: { ref: EntityRef; value: unknown }[]): Promise<EditorResult> {
-  const changed = await saveEntities(changes);
+/** Who is acting, and on which editor, for history and the activity log */
+type Actor = { session: AdminSession; form: EditorKey; slug?: string };
+
+/** "the Home page", "Construction", … and the admin page it lives on */
+async function describe(form: EditorKey, slug = ""): Promise<{ label: string; href: string }> {
+  switch (form) {
+    case "home":
+      return { label: "the Home page", href: "/admin/home" };
+    case "about":
+      return { label: "the About page", href: "/admin/about" };
+    case "contact":
+      return { label: "the contact details", href: "/admin/contact" };
+    case "pages":
+      return { label: "the page text and SEO", href: "/admin/pages" };
+    case "sector":
+      return { label: (await readEntity({ type: "sector", id: slug })).name, href: `/admin/sectors/${slug}` };
+    case "leader":
+      return { label: (await readEntity({ type: "leader", id: slug })).name, href: `/admin/leadership/${slug}` };
+  }
+}
+
+async function saveAll(changes: { ref: EntityRef; value: unknown }[], actor: Actor): Promise<EditorResult> {
+  const { label, href } = await describe(actor.form, actor.slug);
+  const summary = `Saved ${label}`;
+  const changed = await saveEntities(changes, { userId: actor.session.userId, summary });
   if (!changed.length) return { status: "unchanged", message: "Nothing to save: you haven't changed anything." };
   publish(changed);
+  await recordActivity({ userId: actor.session.userId, action: "content.save", summary, href });
   return { status: "saved", message: "Saved. The website now shows your changes." };
 }
 
@@ -110,7 +136,7 @@ async function sectionChange(key: SectionKey, raw: FormObject, adjust?: (candida
    ------------------------------------------------------------------ */
 
 export async function saveHome(formData: FormData): Promise<EditorResult> {
-  return run(async () => {
+  return run(async (session) => {
     const { slides: rawSlides, ...raw } = formToObject(formData);
     const errors: FieldErrors = {};
 
@@ -145,41 +171,44 @@ export async function saveHome(formData: FormData): Promise<EditorResult> {
     if (!slideCheck.success) Object.assign(errors, fieldErrors(slideCheck.error.issues, "slides"));
 
     if (Object.keys(errors).length || !home || !slideCheck.success) throw new InvalidInput(errors);
-    return saveAll([home, { ref: slidesRef, value: slideCheck.data }]);
+    return saveAll([home, { ref: slidesRef, value: slideCheck.data }], { session, form: "home" });
   });
 }
 
 export async function saveAbout(formData: FormData): Promise<EditorResult> {
-  return run(async () => saveAll([await sectionChange("about", formToObject(formData))]));
+  return run(async (session) => saveAll([await sectionChange("about", formToObject(formData))], { session, form: "about" }));
 }
 
 export async function saveContact(formData: FormData): Promise<EditorResult> {
-  return run(async () =>
-    saveAll([
-      await sectionChange("company", formToObject(formData), (c) => {
-        if (typeof c.established === "string") c.established = c.established.trim() === "" ? Number.NaN : Number(c.established);
-      }),
-    ]),
+  return run(async (session) =>
+    saveAll(
+      [
+        await sectionChange("company", formToObject(formData), (c) => {
+          if (typeof c.established === "string") c.established = c.established.trim() === "" ? Number.NaN : Number(c.established);
+        }),
+      ],
+      { session, form: "contact" },
+    ),
   );
 }
 
 export async function savePages(formData: FormData): Promise<EditorResult> {
-  return run(async () => saveAll([await sectionChange("pages", formToObject(formData))]));
+  return run(async (session) => saveAll([await sectionChange("pages", formToObject(formData))], { session, form: "pages" }));
 }
 
 export async function saveSector(slug: string, formData: FormData): Promise<EditorResult> {
-  return run(async () => {
+  return run(async (session) => {
     const [ref] = refsFor("sector", slug);
     const value = validate(sectorSchema, overlay(await readEntity(ref), formToObject(formData)));
-    return saveAll([{ ref, value }]);
+    return saveAll([{ ref, value }], { session, form: "sector", slug });
   });
 }
 
 export async function saveLeader(slug: string, formData: FormData): Promise<EditorResult> {
-  return run(async () => {
+  return run(async (session) => {
     const [ref] = refsFor("leader", slug);
     const value = validate(leaderSchema, overlay(await readEntity(ref), formToObject(formData)));
-    return saveAll([{ ref, value }]);
+    return saveAll([{ ref, value }], { session, form: "leader", slug });
   });
 }
 
@@ -188,20 +217,28 @@ export async function saveLeader(slug: string, formData: FormData): Promise<Edit
    ------------------------------------------------------------------ */
 
 export async function undoLastChange(form: EditorKey, slug = ""): Promise<EditorResult> {
-  return run(async () => {
+  return run(async (session) => {
     const restored = await undoLastSave(refsFor(form, slug));
     if (!restored.length) return { status: "unchanged", message: "There is no earlier saved version to go back to." };
     publish(restored);
+    const { label, href } = await describe(form, slug);
+    await recordActivity({ userId: session.userId, action: "content.undo", summary: `Undid the last change to ${label}`, href });
     return { status: "saved", message: "Your last saved change was undone. The website shows the previous version again." };
   });
 }
 
 export async function restoreOriginal(form: EditorKey, slug = ""): Promise<EditorResult> {
-  return run(async () => {
+  return run(async (session) => {
     const refs = refsFor(form, slug);
-    const changed = await saveEntities(refs.map((ref) => ({ ref, value: defaultsFor(ref) })));
+    const { label, href } = await describe(form, slug);
+    const summary = `Restored the original ${label.replace(/^the /, "")}`;
+    const changed = await saveEntities(
+      refs.map((ref) => ({ ref, value: defaultsFor(ref) })),
+      { userId: session.userId, summary },
+    );
     if (!changed.length) return { status: "unchanged", message: "This is already the original content." };
     publish(changed);
+    await recordActivity({ userId: session.userId, action: "content.restore", summary, href });
     return { status: "saved", message: "The original content is back. Use “Undo last change” to return to your version." };
   });
 }
