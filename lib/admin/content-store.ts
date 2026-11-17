@@ -25,6 +25,7 @@ import {
   type LeaderItem,
   type SectionData,
   type SectorItem,
+  type SlideItem,
 } from "../content/sections";
 import { heroSlides as defaultHeroSlides } from "../media";
 import { leaders as defaultLeaders, sectors as defaultSectors } from "../site";
@@ -43,7 +44,7 @@ export type EntityValue<R extends EntityRef> = R extends { type: "section"; id: 
     ? SectorItem
     : R extends { type: "leader" }
       ? LeaderItem
-      : ImageRef[];
+      : SlideItem[];
 
 /** How many previous versions to keep per entity */
 const HISTORY_DEPTH = 20;
@@ -109,7 +110,9 @@ async function read(tx: Tx, ref: EntityRef): Promise<unknown> {
     }
     case "hero_slides": {
       const rows = await tx.select().from(schema.heroSlides).orderBy(asc(schema.heroSlides.sortOrder), asc(schema.heroSlides.id));
-      return rows.length ? rows.map((r) => ({ src: r.imageUrl, alt: r.imageAlt, width: r.imageWidth, height: r.imageHeight })) : defaultsFor(ref);
+      if (!rows.length) return defaultsFor(ref);
+      const slides: SlideItem[] = rows.map((r) => ({ id: r.id, src: r.imageUrl, alt: r.imageAlt, width: r.imageWidth, height: r.imageHeight, visible: r.visible }));
+      return slides;
     }
   }
 }
@@ -141,11 +144,25 @@ async function write(tx: Tx, ref: EntityRef, value: unknown): Promise<void> {
       return;
     }
     case "hero_slides": {
+      // Update rows in place so each slide keeps its id (the admin list and
+      // its Visible switches rely on it). Slides without a known id (built-in
+      // defaults, older saved versions, a deleted slide being restored) are
+      // inserted; rows no longer in the list are removed.
       const slides = heroSlidesSchema.parse(value);
-      await tx.delete(schema.heroSlides);
-      await tx.insert(schema.heroSlides).values(
-        slides.map((s, i) => ({ sortOrder: i, imageUrl: s.src, imageAlt: s.alt, imageWidth: s.width, imageHeight: s.height })),
-      );
+      const t = schema.heroSlides;
+      const existing = new Set((await tx.select({ id: t.id }).from(t)).map((r) => r.id));
+      const keep: number[] = [];
+      for (const [i, s] of slides.entries()) {
+        const fields = { sortOrder: i, imageUrl: s.src, imageAlt: s.alt, imageWidth: s.width, imageHeight: s.height, visible: s.visible, updatedAt: now };
+        if (s.id && existing.has(s.id)) {
+          await tx.update(t).set(fields).where(eq(t.id, s.id));
+          keep.push(s.id);
+        } else {
+          const [row] = await tx.insert(t).values(s.id ? { id: s.id, ...fields } : fields).returning({ id: t.id });
+          keep.push(row.id);
+        }
+      }
+      await tx.delete(t).where(keep.length ? sql`${t.id} not in (${sql.join(keep.map((id) => sql`${id}`), sql`, `)})` : sql`true`);
       return;
     }
   }
@@ -184,8 +201,10 @@ export function defaultsFor(ref: EntityRef): unknown {
       };
       return value;
     }
-    case "hero_slides":
-      return defaultHeroSlides.map((s) => ({ src: s.src, alt: s.alt, width: s.width, height: s.height }));
+    case "hero_slides": {
+      const slides: SlideItem[] = defaultHeroSlides.map((s) => ({ src: s.src, alt: s.alt, width: s.width, height: s.height, visible: true }));
+      return slides;
+    }
   }
 }
 
@@ -333,5 +352,83 @@ export async function undoLastSave(refs: EntityRef[]): Promise<EntityRef[]> {
     }
     if (rows.length) await tx.delete(h).where(inArray(h.id, rows.map((r) => r.id)));
     return restored;
+  });
+}
+
+/* ------------------------------------------------------------------
+   Live preview drafts
+   ------------------------------------------------------------------ */
+
+export const entityKey = (ref: EntityRef) => `${ref.type}:${ref.id}`;
+
+/** Store unsaved values for the live preview (read only in Draft Mode). */
+export async function writePreviewDrafts(changes: { ref: EntityRef; value: unknown }[]): Promise<void> {
+  const db = requireDb();
+  for (const { ref, value } of changes) {
+    await db
+      .insert(schema.previewDrafts)
+      .values({ key: entityKey(ref), data: value })
+      .onConflictDoUpdate({ target: schema.previewDrafts.key, set: { data: value, updatedAt: new Date() } });
+  }
+}
+
+/** Remove the preview drafts of these entities (after a save, or on leaving the editor). */
+export async function clearPreviewDrafts(refs: EntityRef[]): Promise<void> {
+  if (!refs.length) return;
+  await requireDb().delete(schema.previewDrafts).where(inArray(schema.previewDrafts.key, refs.map(entityKey)));
+}
+
+/** Drafts left behind by closed tabs are removed after a day. */
+export async function clearStalePreviewDrafts(): Promise<void> {
+  await requireDb().delete(schema.previewDrafts).where(sql`${schema.previewDrafts.updatedAt} < now() - interval '1 day'`);
+}
+
+/* ------------------------------------------------------------------
+   Version history
+   ------------------------------------------------------------------ */
+
+export type VersionEntry = {
+  /** Any history row of the version (identifies its group) */
+  id: number;
+  /** When this version was replaced */
+  replacedAt: string;
+  /** The change that replaced it, e.g. "Saved the Home page" */
+  replacedBy: string | null;
+  who: string | null;
+};
+
+/**
+ * Earlier versions of these entities, newest first. Each save writes one
+ * group of snapshots (one per entity it changed) sharing a timestamp; a
+ * group is one version.
+ */
+export async function listVersions(refs: EntityRef[], limit = 10): Promise<VersionEntry[]> {
+  const h = schema.contentHistory;
+  const rows = await requireDb()
+    .select({
+      id: sql<number>`min(${h.id})::int`,
+      savedAt: h.savedAt,
+      summary: sql<string | null>`max(${h.summary})`,
+      who: sql<string | null>`max(${schema.adminUsers.displayName})`,
+    })
+    .from(h)
+    .leftJoin(schema.adminUsers, eq(schema.adminUsers.id, h.savedBy))
+    .where(refFilter(refs))
+    .groupBy(h.savedAt)
+    .orderBy(sql`${h.savedAt} desc`)
+    .limit(limit);
+  return rows.map((r) => ({ id: r.id, replacedAt: new Date(r.savedAt).toISOString(), replacedBy: r.summary, who: r.who }));
+}
+
+/** The snapshots making up one version (the group the history row belongs to). */
+export async function versionSnapshots(refs: EntityRef[], historyId: number): Promise<{ ref: EntityRef; value: unknown }[]> {
+  const h = schema.contentHistory;
+  const rows = await requireDb()
+    .select({ entityType: h.entityType, entityId: h.entityId, snapshot: h.snapshot })
+    .from(h)
+    .where(and(refFilter(refs), eq(h.savedAt, sql`(select ${h.savedAt} from ${h} where ${h.id} = ${historyId})`)));
+  return rows.flatMap((row) => {
+    const ref = refs.find((r) => r.type === row.entityType && r.id === row.entityId);
+    return ref && row.snapshot !== null ? [{ ref, value: row.snapshot }] : [];
   });
 }

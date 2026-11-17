@@ -181,7 +181,23 @@ export const leaderSchema = z.object({
   photo: imageRef,
 });
 
-export const heroSlidesSchema = z.array(imageRef).min(1, "Keep at least one slideshow photo.").max(10);
+/**
+ * One slideshow photo. `id` is the database row (absent for built-in
+ * defaults and older saved versions); hidden slides stay listed in the admin
+ * but are not shown on the website.
+ */
+export const slideSchema = imageRef.extend({
+  id: z.int().positive().optional(),
+  visible: z.boolean().default(true),
+});
+
+export const heroSlidesSchema = z
+  .array(slideSchema)
+  .min(1, "Keep at least one slideshow photo.")
+  .max(10, "The slideshow can hold up to 10 photos.")
+  .refine((slides) => slides.some((s) => s.visible), "Keep at least one photo visible in the slideshow.");
+
+export type SlideItem = z.infer<typeof slideSchema>;
 
 export type SectorItem = z.infer<typeof sectorSchema>;
 export type LeaderItem = z.infer<typeof leaderSchema>;

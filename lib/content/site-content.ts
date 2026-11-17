@@ -14,12 +14,14 @@
 import "server-only";
 import { asc, count, eq } from "drizzle-orm";
 import { cacheTag } from "next/cache";
+import { draftMode } from "next/headers";
 import { getDb, schema } from "../db";
 import type { SectionKey } from "../db/schema";
 import { galleryPhotos as defaultGallery, heroSlides as defaultHeroSlides, homeGallery } from "../media";
 import { leaders as defaultLeaders, sectors as defaultSectors, type IconName, type ImageAsset, type Leader, type Sector } from "../site";
+import { readPreviewDraft } from "./preview";
 import { readWithFallback } from "./read";
-import { parseSection, sectionDefaults, type SectionData } from "./sections";
+import { heroSlidesSchema, parseSection, sectionDefaults, type SectionData } from "./sections";
 
 /** Cache tags. The admin panel calls updateTag() with these after a save. */
 export const TAGS = {
@@ -52,6 +54,12 @@ const toImage = (row: { imageUrl: string; imageAlt: string; imageWidth: number; 
 async function readSection<K extends SectionKey>(key: K): Promise<SectionData[K]> {
   "use cache";
   cacheTag(TAGS.section(key));
+  // Live preview: an admin in Draft Mode sees their unsaved values. Draft
+  // Mode re-runs this function per request without caching the result.
+  if ((await draftMode()).isEnabled) {
+    const draft = await readPreviewDraft(`section:${key}`);
+    if (draft) return parseSection(key, draft);
+  }
   return readWithFallback(
     `section "${key}"`,
     () => sectionDefaults[key],
@@ -135,8 +143,12 @@ export async function getLeaders(): Promise<Leader[]> {
 export async function getHeroSlides(): Promise<ImageAsset[]> {
   "use cache";
   cacheTag(TAGS.heroSlides);
+  if ((await draftMode()).isEnabled) {
+    const draft = heroSlidesSchema.safeParse(await readPreviewDraft("hero_slides:all"));
+    if (draft.success) return draft.data.filter((s) => s.visible).map(({ src, alt, width, height }) => ({ src, alt, width, height }));
+  }
   return readWithFallback("hero slides", () => defaultHeroSlides, async (db) => {
-    const rows = await db.select().from(schema.heroSlides).orderBy(asc(schema.heroSlides.sortOrder));
+    const rows = (await db.select().from(schema.heroSlides).orderBy(asc(schema.heroSlides.sortOrder))).filter((r) => r.visible);
     return rows.length ? rows.map(toImage) : defaultHeroSlides;
   });
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { LIST_MARKER } from "@/lib/admin/form-data";
 import { Icon } from "../../Icon";
+import type { IconName } from "@/lib/site";
 import { useFieldError, useFormChanged } from "./EditorShell";
 
 const fieldId = (name: string) => `f-${name.replace(/[^a-z0-9]+/gi, "-")}`;
@@ -186,6 +187,7 @@ export function IconField({ name, label, defaultValue, icons, allowNone }: { nam
 /** A titled card of related fields. Collapsible ones start closed unless `open`. */
 export function Group({
   id,
+  icon,
   title,
   description,
   children,
@@ -194,12 +196,19 @@ export function Group({
 }: {
   /** Anchor for links such as /admin/pages#page-about; a collapsible group opens itself when targeted */
   id?: string;
+  /** Small icon beside the title, so cards are easy to tell apart */
+  icon?: IconName;
   title: string;
   description?: React.ReactNode;
   children: React.ReactNode;
   collapsible?: boolean;
   open?: boolean;
 }) {
+  const chip = icon ? (
+    <span aria-hidden="true" className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-paper text-gold-deep">
+      <Icon name={icon} size={19} />
+    </span>
+  ) : null;
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
   // Open and show this group when the address points at it (on load and on later jumps)
@@ -222,9 +231,12 @@ export function Group({
     return (
       <details ref={detailsRef} id={id} open={open} className="group/g scroll-mt-24 rounded-lg border border-line bg-white">
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 sm:px-6 [&::-webkit-details-marker]:hidden">
-          <span className="flex min-w-0 flex-col">
-            <span className="text-lg font-bold [overflow-wrap:anywhere] text-navy">{title}</span>
-            {description ? <span className="text-sm text-muted">{description}</span> : null}
+          <span className="flex min-w-0 items-center gap-3">
+            {chip}
+            <span className="flex min-w-0 flex-col">
+              <span className="text-lg font-bold [overflow-wrap:anywhere] text-navy">{title}</span>
+              {description ? <span className="text-sm text-muted">{description}</span> : null}
+            </span>
           </span>
           <Icon name="arrow" size={20} className="shrink-0 rotate-90 text-muted transition-transform group-open/g:-rotate-90" />
         </summary>
@@ -234,8 +246,13 @@ export function Group({
   }
   return (
     <section id={id} className="scroll-mt-24 rounded-lg border border-line bg-white px-4 py-5 sm:px-6">
-      <h2 className="text-lg font-bold [overflow-wrap:anywhere] text-navy">{title}</h2>
-      {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+      <div className="flex items-start gap-3">
+        {chip}
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold [overflow-wrap:anywhere] text-navy">{title}</h2>
+          {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+        </div>
+      </div>
       <div className="mt-5">{body}</div>
     </section>
   );

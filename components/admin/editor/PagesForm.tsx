@@ -7,6 +7,7 @@ import { EditorShell } from "./EditorShell";
 import { Group, ImageAltField, TextField } from "./fields";
 import type { EditorProps } from "./types";
 import { pageSeoAnchor } from "@/lib/admin/navigation";
+import { SearchPreview } from "./SearchPreview";
 
 const m = (path: string) => maxLengthAt(pagesSchema, path);
 
@@ -23,7 +24,7 @@ export const PAGE_LABELS: Record<PageKey, { label: string; path: string }> = {
 const TITLE_HINT = "The clickable headline in Google results and the browser tab. The company name is added after it automatically.";
 const DESCRIPTION_HINT = "The grey text under the headline in Google results. One or two sentences.";
 
-export function PagesForm({ values: [pages], ...state }: EditorProps<[PagesSection]>) {
+export function PagesForm({ values: [pages], siteHost, companyName, ...state }: EditorProps<[PagesSection]> & { siteHost: string; companyName: string }) {
   return (
     <EditorShell {...state} save={savePages} undo={() => undoLastChange("pages")} restore={() => restoreOriginal("pages")}>
       <Group id={pageSeoAnchor("home")} title="Home page" description="How the home page appears in Google and when shared." collapsible open>
@@ -36,6 +37,7 @@ export function PagesForm({ values: [pages], ...state }: EditorProps<[PagesSecti
           hint="The full title for the home page, including the company name."
         />
         <TextField name="home.description" label="Description in search results" defaultValue={pages.home.description} max={m("home.description")} rows={3} hint={DESCRIPTION_HINT} />
+        <SearchPreview titleField="home.title" descriptionField="home.description" path="/" siteHost={siteHost} image={{ src: "/opengraph-image" }} />
       </Group>
 
       {PAGE_KEYS.map((key) => {
@@ -53,6 +55,14 @@ export function PagesForm({ values: [pages], ...state }: EditorProps<[PagesSecti
             <h3 className="mt-2 text-sm font-bold tracking-wide text-muted uppercase">Search engines</h3>
             <TextField name={`${key}.title`} label="Title in search results" defaultValue={page.title} max={m(`${key}.title`)} hint={TITLE_HINT} />
             <TextField name={`${key}.description`} label="Description in search results" defaultValue={page.description} max={m(`${key}.description`)} rows={3} hint={DESCRIPTION_HINT} />
+            <SearchPreview
+              titleField={`${key}.title`}
+              descriptionField={`${key}.description`}
+              path={path}
+              siteHost={siteHost}
+              titleSuffix={` | ${companyName}`}
+              image={page.bannerImage ? { src: page.bannerImage.src } : undefined}
+            />
           </Group>
         );
       })}

@@ -1,6 +1,7 @@
 import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { TopBar } from "./TopBar";
+import { PreviewIndicator } from "./PreviewIndicator";
 
 /** Skip link, top bar, header and footer around public page content. */
 export function SiteChrome({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
       <SiteHeader />
       <div className="flex-1">{children}</div>
       <SiteFooter />
+      <PreviewIndicator />
     </>
   );
 }

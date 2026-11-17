@@ -51,7 +51,7 @@ export async function getReviewItems(): Promise<ReviewItem[]> {
 
   // Sample photos, grouped by where they appear
   const slideSamples = slides.filter((s) => isSample(s.src)).length;
-  if (slideSamples) items.push({ key: "samples:slideshow", kind: "photo", title: `Home slideshow: ${plural(slideSamples, "sample photo")}`, detail: photoDetail, href: "/admin/home#slideshow-photos" });
+  if (slideSamples) items.push({ key: "samples:slideshow", kind: "photo", title: `Home slideshow: ${plural(slideSamples, "sample photo")}`, detail: photoDetail, href: "/admin/home/slideshow" });
   for (const sector of sectors) {
     if (!sector.src) {
       items.push({

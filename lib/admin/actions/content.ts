@@ -1,59 +1,46 @@
 "use server";
 
 /**
- * Save, undo and restore actions for the content editors.
+ * Save, preview, undo, restore and version actions for the content editors,
+ * and the slideshow list actions.
  *
- * Every action checks the session first, validates the submitted fields
- * with the same Zod schema the public site parses with, saves through the
- * content store (which snapshots the previous version for undo), expires
- * the public pages' cache tags with updateTag so the change is live
- * immediately, and refreshes the editor so it shows what is now stored.
+ * Every action checks the session first. Each editor has one "builder" that
+ * turns submitted fields into validated new values; Save stores them (with
+ * a snapshot of the previous version for undo and history), expires the
+ * public pages' cache tags with updateTag so the change is live
+ * immediately, and refreshes the editor. Live preview runs the same builder
+ * but only writes a preview draft, which the public pages show to an admin
+ * in Draft Mode and to nobody else.
  */
 import { refresh, updateTag } from "next/cache";
+import { draftMode } from "next/headers";
 import type { z } from "zod";
 import { requireAdmin, UnauthorizedError } from "@/lib/auth/dal";
 import type { AdminSession } from "@/lib/auth/session";
 import { recordActivity } from "@/lib/admin/activity";
 import {
+  clearPreviewDrafts,
+  clearStalePreviewDrafts,
   defaultsFor,
   readEntity,
   saveEntities,
   tagsFor,
   undoLastSave,
   UnknownItemError,
+  versionSnapshots,
+  writePreviewDrafts,
   type EntityRef,
 } from "@/lib/admin/content-store";
 import { fieldErrors, formToObject, overlay, type EditorResult, type FieldErrors, type FormObject } from "@/lib/admin/form-data";
-import {
-  heroSlidesSchema,
-  leaderSchema,
-  sectionSchemas,
-  sectorSchema,
-  type ImageRef,
-} from "@/lib/content/sections";
+import { heroSlidesSchema, leaderSchema, sectionSchemas, sectorSchema, type SlideItem } from "@/lib/content/sections";
 import type { SectionKey } from "@/lib/db/schema";
+import { refsFor, type EditorKey } from "@/lib/admin/editor-forms";
 
 /* ------------------------------------------------------------------
-   Which entities each editor covers
+   Which entities each editor covers: see lib/admin/editor-forms.ts
    ------------------------------------------------------------------ */
 
-const FORMS = {
-  home: () => [{ type: "section", id: "home" }, { type: "hero_slides", id: "all" }],
-  about: () => [{ type: "section", id: "about" }],
-  contact: () => [{ type: "section", id: "company" }],
-  pages: () => [{ type: "section", id: "pages" }],
-  sector: (slug: string) => [{ type: "sector", id: slug }],
-  leader: (slug: string) => [{ type: "leader", id: slug }],
-} satisfies Record<string, (slug: string) => EntityRef[]>;
-
-export type EditorKey = keyof typeof FORMS;
-
-function refsFor(form: string, slug: string): EntityRef[] {
-  // Actions can be called with any arguments, so check them
-  if (!Object.hasOwn(FORMS, form)) throw new UnknownItemError();
-  if ((form === "sector" || form === "leader") && !/^[a-z0-9-]{1,80}$/.test(slug)) throw new UnknownItemError();
-  return FORMS[form as EditorKey](slug) as EntityRef[];
-}
+export type { EditorKey } from "@/lib/admin/editor-forms";
 
 /* ------------------------------------------------------------------
    Shared plumbing
@@ -92,14 +79,13 @@ function validate<S extends z.ZodType>(schema: S, value: unknown, prefix = ""): 
   return result.data;
 }
 
-/** Who is acting, and on which editor, for history and the activity log */
-type Actor = { session: AdminSession; form: EditorKey; slug?: string };
-
 /** "the Home page", "Construction", … and the admin page it lives on */
 async function describe(form: EditorKey, slug = ""): Promise<{ label: string; href: string }> {
   switch (form) {
     case "home":
       return { label: "the Home page", href: "/admin/home" };
+    case "slideshow":
+      return { label: "the home slideshow", href: "/admin/home/slideshow" };
     case "about":
       return { label: "the About page", href: "/admin/about" };
     case "contact":
@@ -113,18 +99,28 @@ async function describe(form: EditorKey, slug = ""): Promise<{ label: string; hr
   }
 }
 
-async function saveAll(changes: { ref: EntityRef; value: unknown }[], actor: Actor): Promise<EditorResult> {
-  const { label, href } = await describe(actor.form, actor.slug);
-  const summary = `Saved ${label}`;
-  const changed = await saveEntities(changes, { userId: actor.session.userId, summary });
-  if (!changed.length) return { status: "unchanged", message: "Nothing to save: you haven't changed anything." };
+type Change = { ref: EntityRef; value: unknown };
+
+/** Store changes (snapshotting the previous version), publish them and log them. */
+async function commit(changes: Change[], session: AdminSession, form: EditorKey, slug: string, summary: string, action: "content.save" | "content.restore" = "content.save") {
+  const { href } = await describe(form, slug);
+  const changed = await saveEntities(changes, { userId: session.userId, summary });
+  await clearPreviewDrafts(changes.map((c) => c.ref));
+  if (!changed.length) return changed;
   publish(changed);
-  await recordActivity({ userId: actor.session.userId, action: "content.save", summary, href });
+  await recordActivity({ userId: session.userId, action, summary, href });
+  return changed;
+}
+
+async function saveAll(changes: Change[], session: AdminSession, form: EditorKey, slug = ""): Promise<EditorResult> {
+  const { label } = await describe(form, slug);
+  const changed = await commit(changes, session, form, slug, `Saved ${label}`);
+  if (!changed.length) return { status: "unchanged", message: "Nothing to save: you haven't changed anything." };
   return { status: "saved", message: "Saved. The website now shows your changes." };
 }
 
-/** Validate and save one content section from the submitted fields. */
-async function sectionChange(key: SectionKey, raw: FormObject, adjust?: (candidate: Record<string, unknown>) => void) {
+/** Validate one content section from the submitted fields. */
+async function sectionChange(key: SectionKey, raw: FormObject, adjust?: (candidate: Record<string, unknown>) => void): Promise<Change> {
   const ref = { type: "section", id: key } as const;
   const candidate = overlay(await readEntity(ref), raw) as Record<string, unknown>;
   adjust?.(candidate);
@@ -132,93 +128,112 @@ async function sectionChange(key: SectionKey, raw: FormObject, adjust?: (candida
 }
 
 /* ------------------------------------------------------------------
-   Save actions (one per editor)
+   Builders: submitted fields -> validated changes (shared by Save and preview)
    ------------------------------------------------------------------ */
 
-export async function saveHome(formData: FormData): Promise<EditorResult> {
-  return run(async (session) => {
-    const { slides: rawSlides, ...raw } = formToObject(formData);
-    const errors: FieldErrors = {};
-
-    let home: { ref: EntityRef; value: unknown } | undefined;
-    try {
-      home = await sectionChange("home", raw, (c) => {
-        // "No icon" arrives as an empty choice
-        for (const fact of (c.facts as Record<string, unknown>[] | undefined) ?? []) if (fact.icon === "") delete fact.icon;
-      });
-    } catch (e) {
-      if (!(e instanceof InvalidInput)) throw e;
-      Object.assign(errors, e.fields);
-    }
-
-    // Slides can be reordered, removed and re-described here; each must be
-    // one of the photos already in the slideshow (new photos come with uploads)
-    const slidesRef = { type: "hero_slides", id: "all" } as const;
-    const current = await readEntity(slidesRef);
-    const unused = [...current];
-    const slides: ImageRef[] = [];
-    (Array.isArray(rawSlides) ? rawSlides : []).forEach((item, i) => {
-      const s = item as { src?: string; alt?: string };
-      const at = unused.findIndex((c) => c.src === s.src);
-      if (at === -1) {
-        errors[`slides.${i}.alt`] = "This photo is no longer in the slideshow. Reload the page.";
-        return;
-      }
-      slides.push({ ...unused[at], alt: s.alt ?? "" });
-      unused.splice(at, 1);
-    });
-    const slideCheck = heroSlidesSchema.safeParse(slides);
-    if (!slideCheck.success) Object.assign(errors, fieldErrors(slideCheck.error.issues, "slides"));
-
-    if (Object.keys(errors).length || !home || !slideCheck.success) throw new InvalidInput(errors);
-    return saveAll([home, { ref: slidesRef, value: slideCheck.data }], { session, form: "home" });
-  });
-}
-
-export async function saveAbout(formData: FormData): Promise<EditorResult> {
-  return run(async (session) => saveAll([await sectionChange("about", formToObject(formData))], { session, form: "about" }));
-}
-
-export async function saveContact(formData: FormData): Promise<EditorResult> {
-  return run(async (session) =>
-    saveAll(
-      [
-        await sectionChange("company", formToObject(formData), (c) => {
-          if (typeof c.established === "string") c.established = c.established.trim() === "" ? Number.NaN : Number(c.established);
-        }),
-      ],
-      { session, form: "contact" },
-    ),
-  );
-}
-
-export async function savePages(formData: FormData): Promise<EditorResult> {
-  return run(async (session) => saveAll([await sectionChange("pages", formToObject(formData))], { session, form: "pages" }));
-}
-
-export async function saveSector(slug: string, formData: FormData): Promise<EditorResult> {
-  return run(async (session) => {
+const BUILDERS: Partial<Record<EditorKey, (fields: FormObject, slug: string) => Promise<Change[]>>> = {
+  home: async (fields) => [
+    await sectionChange("home", fields, (c) => {
+      // "No icon" arrives as an empty choice
+      for (const fact of (c.facts as Record<string, unknown>[] | undefined) ?? []) if (fact.icon === "") delete fact.icon;
+    }),
+  ],
+  about: async (fields) => [await sectionChange("about", fields)],
+  contact: async (fields) => [
+    await sectionChange("company", fields, (c) => {
+      if (typeof c.established === "string") c.established = c.established.trim() === "" ? Number.NaN : Number(c.established);
+    }),
+  ],
+  pages: async (fields) => [await sectionChange("pages", fields)],
+  sector: async (fields, slug) => {
     const [ref] = refsFor("sector", slug);
-    const value = validate(sectorSchema, overlay(await readEntity(ref), formToObject(formData)));
-    return saveAll([{ ref, value }], { session, form: "sector", slug });
-  });
-}
-
-export async function saveLeader(slug: string, formData: FormData): Promise<EditorResult> {
-  return run(async (session) => {
+    return [{ ref, value: validate(sectorSchema, overlay(await readEntity(ref), fields)) }];
+  },
+  leader: async (fields, slug) => {
     const [ref] = refsFor("leader", slug);
-    const value = validate(leaderSchema, overlay(await readEntity(ref), formToObject(formData)));
-    return saveAll([{ ref, value }], { session, form: "leader", slug });
-  });
+    return [{ ref, value: validate(leaderSchema, overlay(await readEntity(ref), fields)) }];
+  },
+};
+
+function builderFor(form: string): (fields: FormObject, slug: string) => Promise<Change[]> {
+  const builder = Object.hasOwn(BUILDERS, form) ? BUILDERS[form as EditorKey] : undefined;
+  if (!builder) throw new UnknownItemError();
+  return builder;
 }
 
 /* ------------------------------------------------------------------
-   Undo and restore (shared by every editor)
+   Save (one action per editor, so each form can bind its own)
+   ------------------------------------------------------------------ */
+
+const saveWith = (form: EditorKey, formData: FormData, slug = "") =>
+  run(async (session) => saveAll(await builderFor(form)(formToObject(formData), slug), session, form, slug));
+
+export async function saveHome(formData: FormData): Promise<EditorResult> {
+  return saveWith("home", formData);
+}
+export async function saveAbout(formData: FormData): Promise<EditorResult> {
+  return saveWith("about", formData);
+}
+export async function saveContact(formData: FormData): Promise<EditorResult> {
+  return saveWith("contact", formData);
+}
+export async function savePages(formData: FormData): Promise<EditorResult> {
+  return saveWith("pages", formData);
+}
+export async function saveSector(slug: string, formData: FormData): Promise<EditorResult> {
+  return saveWith("sector", formData, slug);
+}
+export async function saveLeader(slug: string, formData: FormData): Promise<EditorResult> {
+  return saveWith("leader", formData, slug);
+}
+
+/* ------------------------------------------------------------------
+   Live preview
+   ------------------------------------------------------------------ */
+
+export type PreviewResult = { ok: true } | { ok: false; reason: "invalid" | "error"; message: string };
+
+/** Turn on Draft Mode for this admin's browser so the preview frame shows drafts. */
+export async function startPreview(): Promise<PreviewResult> {
+  try {
+    await requireAdmin();
+    (await draftMode()).enable();
+    await clearStalePreviewDrafts();
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof UnauthorizedError) return { ok: false, reason: "error", message: error.message };
+    console.error("[admin] could not start preview", error);
+    return { ok: false, reason: "error", message: "The preview could not start." };
+  }
+}
+
+/** Store the editor's unsaved values as a preview draft (nothing is published). */
+export async function updatePreview(form: EditorKey, slug: string, formData: FormData): Promise<PreviewResult> {
+  try {
+    await requireAdmin();
+    refsFor(form, slug);
+    // Re-assert Draft Mode on every update (cheap, and robust to a reload in between)
+    (await draftMode()).enable();
+    const changes = await builderFor(form)(formToObject(formData), slug);
+    await writePreviewDrafts(changes);
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof InvalidInput) return { ok: false, reason: "invalid", message: "The preview is paused until the highlighted fields are fixed." };
+    if (error instanceof UnauthorizedError || error instanceof UnknownItemError) return { ok: false, reason: "error", message: error.message };
+    console.error("[admin] preview update failed", error);
+    return { ok: false, reason: "error", message: "The preview could not be updated." };
+  }
+}
+
+/* ------------------------------------------------------------------
+   Undo, restore original, restore an earlier version (every editor)
    ------------------------------------------------------------------ */
 
 export async function undoLastChange(form: EditorKey, slug = ""): Promise<EditorResult> {
   return run(async (session) => {
-    const restored = await undoLastSave(refsFor(form, slug));
+    const refs = refsFor(form, slug);
+    const restored = await undoLastSave(refs);
+    await clearPreviewDrafts(refs);
     if (!restored.length) return { status: "unchanged", message: "There is no earlier saved version to go back to." };
     publish(restored);
     const { label, href } = await describe(form, slug);
@@ -230,15 +245,86 @@ export async function undoLastChange(form: EditorKey, slug = ""): Promise<Editor
 export async function restoreOriginal(form: EditorKey, slug = ""): Promise<EditorResult> {
   return run(async (session) => {
     const refs = refsFor(form, slug);
-    const { label, href } = await describe(form, slug);
-    const summary = `Restored the original ${label.replace(/^the /, "")}`;
-    const changed = await saveEntities(
+    const { label } = await describe(form, slug);
+    const changed = await commit(
       refs.map((ref) => ({ ref, value: defaultsFor(ref) })),
-      { userId: session.userId, summary },
+      session,
+      form,
+      slug,
+      `Restored the original ${label.replace(/^the /, "")}`,
+      "content.restore",
     );
     if (!changed.length) return { status: "unchanged", message: "This is already the original content." };
-    publish(changed);
-    await recordActivity({ userId: session.userId, action: "content.restore", summary, href });
     return { status: "saved", message: "The original content is back. Use “Undo last change” to return to your version." };
   });
+}
+
+export async function restoreVersion(form: EditorKey, slug: string, historyId: number): Promise<EditorResult> {
+  return run(async (session) => {
+    const refs = refsFor(form, slug);
+    if (!Number.isInteger(historyId) || historyId <= 0) throw new UnknownItemError();
+    const snapshots = await versionSnapshots(refs, historyId);
+    if (!snapshots.length) throw new UnknownItemError();
+    const { label } = await describe(form, slug);
+    const changed = await commit(snapshots, session, form, slug, `Restored an earlier version of ${label.replace(/^the /, "")}`, "content.restore");
+    if (!changed.length) return { status: "unchanged", message: "That version is the same as the current one." };
+    return { status: "saved", message: "That earlier version is back on the website. Use “Undo last change” to return." };
+  });
+}
+
+/* ------------------------------------------------------------------
+   Slideshow list
+   ------------------------------------------------------------------ */
+
+const SLIDES: EntityRef = { type: "hero_slides", id: "all" };
+
+async function changeSlides(session: AdminSession, summary: string, edit: (slides: SlideItem[]) => SlideItem[]): Promise<EditorResult> {
+  const current = (await readEntity(SLIDES)) as SlideItem[];
+  const next = edit(current.map((s) => ({ ...s })));
+  const value = validate(heroSlidesSchema, next);
+  const changed = await commit([{ ref: SLIDES, value }], session, "slideshow", "", summary);
+  if (!changed.length) return { status: "unchanged", message: "Nothing changed." };
+  return { status: "saved", message: "Saved. The website now shows the slideshow as listed." };
+}
+
+const findSlide = (slides: SlideItem[], id: number) => {
+  const index = slides.findIndex((s) => s.id === id);
+  if (index === -1) throw new UnknownItemError();
+  return index;
+};
+
+export async function setSlideVisible(id: number, visible: boolean): Promise<EditorResult> {
+  return run((session) =>
+    changeSlides(session, `${visible ? "Showed" : "Hid"} a slideshow photo`, (slides) => {
+      slides[findSlide(slides, id)].visible = visible;
+      return slides;
+    }),
+  );
+}
+
+export async function describeSlide(id: number, alt: string): Promise<EditorResult> {
+  return run((session) =>
+    changeSlides(session, "Changed a slideshow photo description", (slides) => {
+      slides[findSlide(slides, id)].alt = typeof alt === "string" ? alt : "";
+      return slides;
+    }),
+  );
+}
+
+export async function reorderSlides(ids: number[]): Promise<EditorResult> {
+  return run((session) =>
+    changeSlides(session, "Reordered the slideshow", (slides) => {
+      if (!Array.isArray(ids) || ids.length !== slides.length || new Set(ids).size !== ids.length) throw new UnknownItemError();
+      return ids.map((id) => slides[findSlide(slides, id)]);
+    }),
+  );
+}
+
+export async function deleteSlide(id: number): Promise<EditorResult> {
+  return run((session) =>
+    changeSlides(session, "Removed a slideshow photo", (slides) => {
+      slides.splice(findSlide(slides, id), 1);
+      return slides;
+    }),
+  );
 }

@@ -57,7 +57,16 @@ export function buildNavigation(input: {
     {
       label: "Website",
       entries: [
-        { href: "/admin/home", label: "Home page", icon: "home", keywords: ["headline", "hero", "slideshow", "facts", "call to action"] },
+        {
+          href: "/admin/home",
+          label: "Home page",
+          icon: "home",
+          keywords: ["headline", "hero", "facts", "call to action"],
+          children: [
+            { href: "/admin/home", label: "Page text", keywords: ["headline", "hero", "facts"] },
+            { href: "/admin/home/slideshow", label: "Slideshow photos", keywords: ["slides", "photos", "hero images"] },
+          ],
+        },
         { href: "/admin/about", label: "About", icon: "compass", keywords: ["mission", "vision", "values", "philosophy", "introduction"] },
         {
           href: "/admin/sectors",

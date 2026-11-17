@@ -140,6 +140,8 @@ export const leaders = pgTable("leaders", {
 export const heroSlides = pgTable("hero_slides", {
   id: serial("id").primaryKey(),
   sortOrder: integer("sort_order").notNull().default(0),
+  /** Hidden slides stay in the admin but are not shown on the website */
+  visible: boolean("visible").notNull().default(true),
   ...imageColumns,
   ...timestamps,
 });
@@ -151,6 +153,8 @@ export const galleryPhotos = pgTable("gallery_photos", {
   sectorSlug: text("sector_slug").references(() => sectors.slug, { onDelete: "set null" }),
   /** Also show in the "Our work in pictures" carousel on the home page */
   showOnHome: boolean("show_on_home").notNull().default(false),
+  /** Hidden photos stay in the admin but are not shown on the website */
+  visible: boolean("visible").notNull().default(true),
   ...imageColumns,
   ...timestamps,
 });
@@ -166,6 +170,8 @@ export const newsArticles = pgTable(
     publishedAt: date("published_at", { mode: "string" }).notNull(),
     /** Plain-text blocks: [{ type: "paragraph" | "heading", text }] */
     body: jsonb("body").notNull().$type<{ type: "paragraph" | "heading"; text: string }[]>(),
+    /** Hidden stories stay in the admin but are not shown on the website */
+    visible: boolean("visible").notNull().default(true),
     ...imageColumns,
     ...timestamps,
   },
@@ -187,6 +193,8 @@ export const downloads = pgTable("downloads", {
   filePages: integer("file_pages"),
   publishedAt: date("published_at", { mode: "string" }).notNull(),
   featured: boolean("featured").notNull().default(false),
+  /** Hidden documents stay in the admin but are not shown on the website */
+  visible: boolean("visible").notNull().default(true),
   ...timestamps,
 });
 
@@ -285,3 +293,16 @@ export const uploads = pgTable(
   },
   (t) => [index("uploads_status_idx").on(t.status, t.statusChangedAt)],
 );
+
+/**
+ * Unsaved editor values for the live preview. Written while an admin types
+ * (only through admin-checked actions) and read by the public content
+ * getters only in Draft Mode, whose cookie only the admin preview action
+ * sets. Removed on save, on leaving the editor, and after a day.
+ */
+export const previewDrafts = pgTable("preview_drafts", {
+  /** Entity key, e.g. "section:home" or "hero_slides:all" */
+  key: text("key").primaryKey(),
+  data: jsonb("data").notNull().$type<unknown>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
