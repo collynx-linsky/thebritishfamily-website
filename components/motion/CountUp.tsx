@@ -4,20 +4,41 @@ import { useEffect, useRef } from "react";
 
 /**
  * Number that counts up from zero when it scrolls into view.
- * The server HTML shows the final value, and screen readers always get the
- * final value. With reduced motion, or if the number is already on screen
- * when the page loads, it simply stays at the final value.
+ *
+ * The page contains the final value exactly once, so everyone gets the same
+ * text: visitors without JavaScript, screen readers, copy and paste, reader
+ * modes and search engines (an always-present screen-reader copy would read
+ * as "22" in all of those). Only while the animation runs is the moving
+ * number hidden from assistive technology, with a temporary screen-reader
+ * copy of the final value beside it; both are undone when it finishes.
+ *
+ * With reduced motion, or if the number is already on screen when the page
+ * loads, it simply stays at the final value.
  */
 export function CountUp({ value, durationMs = 1600 }: { value: number; durationMs?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const { top, bottom } = el.getBoundingClientRect();
+    const wrapper = ref.current;
+    const number = wrapper?.firstElementChild as HTMLElement | null;
+    if (!wrapper || !number || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const { top, bottom } = wrapper.getBoundingClientRect();
     if (top < window.innerHeight && bottom > 0) return;
 
-    el.textContent = "0";
+    // Animation mode: the moving number is visual only; screen readers get the final value
+    const spoken = document.createElement("span");
+    spoken.className = "sr-only";
+    spoken.textContent = String(value);
+    number.setAttribute("aria-hidden", "true");
+    number.textContent = "0";
+    wrapper.append(spoken);
+
+    const finish = () => {
+      number.textContent = String(value);
+      number.removeAttribute("aria-hidden");
+      spoken.remove();
+    };
+
     let frame = 0;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -27,27 +48,25 @@ export function CountUp({ value, durationMs = 1600 }: { value: number; durationM
         const tick = (now: number) => {
           const t = Math.min(1, (now - start) / durationMs);
           const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-          el.textContent = String(Math.round(value * eased));
+          number.textContent = String(Math.round(value * eased));
           if (t < 1) frame = requestAnimationFrame(tick);
+          else finish();
         };
         frame = requestAnimationFrame(tick);
       },
       { rootMargin: "0px 0px -15% 0px" },
     );
-    observer.observe(el);
+    observer.observe(wrapper);
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frame);
-      el.textContent = String(value);
+      finish();
     };
   }, [value, durationMs]);
 
   return (
-    <>
-      <span ref={ref} aria-hidden="true" className="tabular-nums">
-        {value}
-      </span>
-      <span className="sr-only">{value}</span>
-    </>
+    <span ref={ref}>
+      <span className="tabular-nums">{value}</span>
+    </span>
   );
 }
