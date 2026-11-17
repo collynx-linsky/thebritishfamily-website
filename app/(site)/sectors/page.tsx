@@ -97,7 +97,7 @@ export default async function SectorsPage() {
                       ) : null}
                       <span
                         aria-hidden="true"
-                        className={`absolute -top-5 -z-10 size-28 rounded-full border-[14px] border-gold ${flipped ? "-right-5" : "-left-5"}`}
+                        className={`absolute -top-5 -z-10 size-28 rounded-full border-[14px] border-gold ${flipped ? "-right-3 sm:-right-5" : "-left-3 sm:-left-5"}`}
                       />
                     </div>
 

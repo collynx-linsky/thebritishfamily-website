@@ -141,7 +141,7 @@ async function SectorContent({ params }: { params: Promise<{ slug: string }> }) 
             </div>
             <span
               aria-hidden="true"
-              className="absolute -top-6 -right-6 -z-10 size-32 rounded-full border-16 border-gold"
+              className="absolute -top-4 -right-3 -z-10 size-32 rounded-full border-16 border-gold sm:-top-6 sm:-right-6"
             />
           </div>
         </div>
@@ -237,9 +237,12 @@ async function SectorContent({ params }: { params: Promise<{ slug: string }> }) 
               WhatsApp
             </ButtonLink>
           </div>
-          <p className="mt-6 text-sm text-on-navy">
-            Or email{" "}
-            <a href={emailHref} className="font-semibold text-gold underline-offset-4 hover:underline">
+          <p className="mt-4 flex flex-wrap items-center gap-x-1.5 text-sm text-on-navy">
+            Or email
+            <a
+              href={emailHref}
+              className="inline-flex min-h-11 items-center font-semibold [overflow-wrap:anywhere] text-gold underline-offset-4 hover:underline"
+            >
               <EmailText email={company.email} />
             </a>
           </p>

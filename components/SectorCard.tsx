@@ -44,8 +44,9 @@ export function SectorCard({
           </div>
         ) : null}
       </div>
-      <div className="relative flex flex-1 flex-col items-start gap-2.5 px-6 pb-7">
-        <IconChip icon={sector.icon} className="-mt-7 shadow-card" />
+      {/* Not positioned, so the title link's overlay stretches over the whole card, photo included */}
+      <div className="flex flex-1 flex-col items-start gap-2.5 px-6 pb-7">
+        <IconChip icon={sector.icon} className="relative -mt-7 shadow-card" />
         <Heading className="mt-1 text-xl leading-[1.2] font-bold text-navy">
           <Link
             href={sectorHref(sector)}

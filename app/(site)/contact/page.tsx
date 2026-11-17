@@ -25,7 +25,7 @@ function DetailBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-4">
+    <div className="flex flex-col gap-3 min-[400px]:flex-row min-[400px]:gap-4">
       <span className="inline-flex size-12 shrink-0 items-center justify-center rounded-lg bg-gold text-ink">
         <Icon name={icon} size={22} strokeWidth={2} />
       </span>
@@ -113,7 +113,7 @@ export default async function ContactPage() {
           <aside
             aria-labelledby="details-title"
             data-reveal="left"
-            className="on-dark flex min-w-0 flex-col gap-8 self-start rounded-lg bg-navy p-7 text-white md:p-9"
+            className="on-dark flex min-w-0 flex-col gap-8 self-start rounded-lg bg-navy p-6 text-white min-[400px]:p-7 md:p-9"
           >
             <h2 id="details-title" className="text-2xl font-extrabold">
               Contact details
@@ -145,7 +145,7 @@ export default async function ContactPage() {
 
             <DetailBlock icon="mail" title="Email us">
               <p className="text-sm text-on-navy">General enquiries</p>
-              <a href={`mailto:${company.email}`} className={`${detailLink} font-semibold text-gold`}>
+              <a href={`mailto:${company.email}`} className={`${detailLink} text-sm font-semibold [overflow-wrap:anywhere] text-gold min-[400px]:text-base`}>
                 <span>
                   <EmailText email={company.email} />
                 </span>

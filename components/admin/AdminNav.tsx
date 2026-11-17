@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import type { IconName } from "@/lib/site";
 import { Icon } from "../Icon";
 
@@ -17,6 +18,18 @@ const isActive = (pathname: string, href: string) =>
  */
 export function AdminNav({ items, account }: { items: AdminNavItem[]; account: AdminNavItem }) {
   const pathname = usePathname();
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // On small screens the menu is a sideways-scrolling row: bring the current
+  // area into view (centred), so the admin can always see where they are.
+  // Scrolls only the row itself, never the page.
+  useEffect(() => {
+    const list = listRef.current;
+    const active = list?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!list || !active || list.scrollWidth <= list.clientWidth) return;
+    const target = active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2;
+    list.scrollTo({ left: Math.max(0, target), behavior: "instant" });
+  }, [pathname]);
 
   const link = (item: AdminNavItem) => {
     const active = isActive(pathname, item.href);
@@ -40,7 +53,7 @@ export function AdminNav({ items, account }: { items: AdminNavItem[]; account: A
 
   return (
     <nav aria-label="Admin sections">
-      <ul className="-mx-5 flex gap-1 overflow-x-auto px-5 pb-1 [scrollbar-width:thin] lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+      <ul ref={listRef} className="-mx-5 flex gap-1 overflow-x-auto px-5 pb-1 scrollbar-thin lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
         {items.map((item) => (
           <li key={item.href}>{link(item)}</li>
         ))}
