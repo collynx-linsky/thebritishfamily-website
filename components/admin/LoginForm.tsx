@@ -36,7 +36,7 @@ export function LoginForm({ next, signedOut }: { next?: string; signedOut?: bool
           required
           defaultValue={state.email}
           aria-invalid={state.error ? true : undefined}
-          className="min-h-12 rounded-sm border border-line bg-white px-4 text-base text-ink focus:border-navy focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-0 focus-visible:outline-navy/25"
+          className="min-h-12 w-full min-w-0 rounded-sm border border-line bg-white px-4 text-base text-ink focus:border-navy focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-0 focus-visible:outline-navy/25"
         />
       </div>
 
@@ -51,7 +51,7 @@ export function LoginForm({ next, signedOut }: { next?: string; signedOut?: bool
           autoComplete="current-password"
           required
           aria-invalid={state.error ? true : undefined}
-          className="min-h-12 rounded-sm border border-line bg-white px-4 text-base text-ink focus:border-navy focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-0 focus-visible:outline-navy/25"
+          className="min-h-12 w-full min-w-0 rounded-sm border border-line bg-white px-4 text-base text-ink focus:border-navy focus:outline-none focus-visible:outline-3 focus-visible:outline-offset-0 focus-visible:outline-navy/25"
         />
       </div>
 

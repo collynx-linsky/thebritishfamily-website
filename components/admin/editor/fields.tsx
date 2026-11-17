@@ -185,22 +185,42 @@ export function IconField({ name, label, defaultValue, icons, allowNone }: { nam
 
 /** A titled card of related fields. Collapsible ones start closed unless `open`. */
 export function Group({
+  id,
   title,
   description,
   children,
   collapsible,
   open,
 }: {
+  /** Anchor for links such as /admin/pages#page-about; a collapsible group opens itself when targeted */
+  id?: string;
   title: string;
   description?: React.ReactNode;
   children: React.ReactNode;
   collapsible?: boolean;
   open?: boolean;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  // Open and show this group when the address points at it (on load and on later jumps)
+  useEffect(() => {
+    if (!id || !collapsible) return;
+    const reveal = () => {
+      const details = detailsRef.current;
+      if (!details || window.location.hash !== `#${id}`) return;
+      details.open = true;
+      details.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      details.querySelector("summary")?.focus({ preventScroll: true });
+    };
+    reveal();
+    window.addEventListener("hashchange", reveal);
+    return () => window.removeEventListener("hashchange", reveal);
+  }, [id, collapsible]);
+
   const body = <div className="flex flex-col gap-5">{children}</div>;
   if (collapsible) {
     return (
-      <details open={open} className="group/g rounded-lg border border-line bg-white">
+      <details ref={detailsRef} id={id} open={open} className="group/g scroll-mt-24 rounded-lg border border-line bg-white">
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-4 py-3 sm:px-6 [&::-webkit-details-marker]:hidden">
           <span className="flex min-w-0 flex-col">
             <span className="text-lg font-bold [overflow-wrap:anywhere] text-navy">{title}</span>
@@ -213,7 +233,7 @@ export function Group({
     );
   }
   return (
-    <section className="rounded-lg border border-line bg-white px-4 py-5 sm:px-6">
+    <section id={id} className="scroll-mt-24 rounded-lg border border-line bg-white px-4 py-5 sm:px-6">
       <h2 className="text-lg font-bold [overflow-wrap:anywhere] text-navy">{title}</h2>
       {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
       <div className="mt-5">{body}</div>

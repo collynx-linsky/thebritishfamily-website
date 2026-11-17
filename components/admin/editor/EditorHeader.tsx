@@ -26,7 +26,7 @@ export function EditorHeader({
       ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold [overflow-wrap:anywhere] text-navy sm:text-3xl">{title}</h1>
+          <h1 className="font-display text-2xl font-extrabold [overflow-wrap:anywhere] text-navy sm:text-3xl">{title}</h1>
           <p className="mt-2 max-w-2xl text-muted">{intro}</p>
           <p className="mt-2 text-sm text-muted">
             {lastSavedAt ? <>Last saved {formatRelative(new Date(lastSavedAt))}.</> : <>Not changed since the website was set up.</>}

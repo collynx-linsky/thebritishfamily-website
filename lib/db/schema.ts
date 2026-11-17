@@ -49,6 +49,8 @@ export const adminUsers = pgTable("admin_users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Name shown in the admin (user menu, greetings, "saved by"). Existing accounts get the default. */
+  displayName: text("display_name").notNull().default("Office"),
   ...timestamps,
 });
 

@@ -40,7 +40,11 @@ export type IconName =
   | "image"
   | "key"
   | "search"
-  | "external";
+  | "external"
+  | "chevron"
+  | "logout"
+  | "sidebar"
+  | "user";
 
 export type ImageAsset = {
   src: string;

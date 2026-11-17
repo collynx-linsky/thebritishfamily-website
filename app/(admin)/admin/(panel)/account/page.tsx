@@ -27,7 +27,7 @@ async function AccountPageContent() {
 
   return (
     <main id="main" className="outline-none" tabIndex={-1}>
-      <h1 className="text-3xl font-bold text-navy">Account</h1>
+      <h1 className="font-display text-3xl font-extrabold text-navy">Account</h1>
       <p className="mt-2 text-muted">
         Signed in as <strong className="font-semibold text-ink">{session.email}</strong>.
       </p>

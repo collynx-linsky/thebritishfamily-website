@@ -34,7 +34,7 @@ async function DashboardPageContent() {
 
   return (
     <main id="main" className="outline-none" tabIndex={-1}>
-      <h1 className="text-3xl font-bold text-navy">Dashboard</h1>
+      <h1 className="font-display text-3xl font-extrabold text-navy">Dashboard</h1>
       <p className="mt-2 text-muted">
         Welcome. Choose what you want to change. Each area matches a part of the website.
         <span className="sr-only"> Signed in as {session.email}.</span>

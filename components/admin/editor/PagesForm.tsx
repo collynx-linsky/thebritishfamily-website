@@ -6,6 +6,7 @@ import { PAGE_KEYS, pagesSchema, type PageKey, type PagesSection } from "@/lib/c
 import { EditorShell } from "./EditorShell";
 import { Group, ImageAltField, TextField } from "./fields";
 import type { EditorProps } from "./types";
+import { pageSeoAnchor } from "@/lib/admin/navigation";
 
 const m = (path: string) => maxLengthAt(pagesSchema, path);
 
@@ -25,7 +26,7 @@ const DESCRIPTION_HINT = "The grey text under the headline in Google results. On
 export function PagesForm({ values: [pages], ...state }: EditorProps<[PagesSection]>) {
   return (
     <EditorShell {...state} save={savePages} undo={() => undoLastChange("pages")} restore={() => restoreOriginal("pages")}>
-      <Group title="Home page" description="How the home page appears in Google and when shared." collapsible open>
+      <Group id={pageSeoAnchor("home")} title="Home page" description="How the home page appears in Google and when shared." collapsible open>
         <TextField
           name="home.title"
           label="Title in search results"
@@ -41,7 +42,7 @@ export function PagesForm({ values: [pages], ...state }: EditorProps<[PagesSecti
         const page = pages[key];
         const { label, path } = PAGE_LABELS[key];
         return (
-          <Group key={key} title={`${label} page`} description={path} collapsible>
+          <Group key={key} id={pageSeoAnchor(key)} title={`${label} page`} description={path} collapsible>
             <h3 className="text-sm font-bold tracking-wide text-muted uppercase">Banner at the top of the page</h3>
             <TextField name={`${key}.eyebrow`} label="Small label above the heading" defaultValue={page.eyebrow} max={m(`${key}.eyebrow`)} />
             <TextField name={`${key}.heading`} label="Heading" defaultValue={page.heading} max={m(`${key}.heading`)} rows={2} />

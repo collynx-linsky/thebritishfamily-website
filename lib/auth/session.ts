@@ -27,7 +27,7 @@ const isProduction = process.env.NODE_ENV === "production";
  */
 export const SESSION_COOKIE = isProduction ? "__Host-bfl_admin" : "bfl_admin";
 
-export type AdminSession = { sessionId: number; userId: number; email: string };
+export type AdminSession = { sessionId: number; userId: number; email: string; displayName: string };
 
 export async function createSession(userId: number): Promise<void> {
   const token = newSessionToken();
@@ -62,6 +62,7 @@ export const getSession = cache(async (): Promise<AdminSession | null> => {
       userId: schema.adminSessions.userId,
       lastSeenAt: schema.adminSessions.lastSeenAt,
       email: schema.adminUsers.email,
+      displayName: schema.adminUsers.displayName,
     })
     .from(schema.adminSessions)
     .innerJoin(schema.adminUsers, eq(schema.adminUsers.id, schema.adminSessions.userId))
@@ -77,7 +78,7 @@ export const getSession = cache(async (): Promise<AdminSession | null> => {
   if (idleFor > TOUCH_EVERY_MS) {
     await db.update(schema.adminSessions).set({ lastSeenAt: now }).where(eq(schema.adminSessions.id, row.sessionId));
   }
-  return { sessionId: row.sessionId, userId: row.userId, email: row.email };
+  return { sessionId: row.sessionId, userId: row.userId, email: row.email, displayName: row.displayName };
 });
 
 /** End the current session (logout). */

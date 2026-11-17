@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return <div className="flex min-h-dvh flex-col bg-mist text-ink">{children}</div>;
+  return <div className="flex min-h-dvh flex-col bg-paper text-ink">{children}</div>;
 }

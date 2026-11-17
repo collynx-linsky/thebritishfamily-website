@@ -58,6 +58,15 @@ export function EditorShell({ version, canUndo, isOriginal, save, undo, restore,
     setDirtyFor(serialize(form) !== initial.current.value ? version : null);
   }, [version]);
 
+  // Let the rest of the admin (the command palette) know about unsaved changes
+  useEffect(() => {
+    if (!dirty) return;
+    document.documentElement.dataset.unsavedChanges = "true";
+    return () => {
+      delete document.documentElement.dataset.unsavedChanges;
+    };
+  }, [dirty]);
+
   // Warn before closing the tab or following a link with unsaved changes
   useEffect(() => {
     if (!dirty) return;

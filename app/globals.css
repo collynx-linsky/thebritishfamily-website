@@ -23,6 +23,9 @@
   --color-error: #a61b1b;
   /* Body text on navy backgrounds (passes AA on navy, navy-soft and navy-deep) */
   --color-on-navy: #d9e1f0;
+  /* Admin work surface: warm off-white behind white cards (muted text stays above 7:1) */
+  --color-paper: #f6f4ef;
+  --color-paper-line: #e6e1d6;
 
   /* Typography */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -454,5 +457,21 @@
   }
   .marquee-clone {
     display: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Admin: command palette and phone drawer entrances (reduced motion
+   turns them off where they are used)
+   ------------------------------------------------------------------ */
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
   }
 }

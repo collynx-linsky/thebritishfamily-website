@@ -23,7 +23,7 @@ async function SectorsAdminPageContent() {
   return (
     <main id="main" tabIndex={-1} className="flex flex-col gap-6 outline-none">
       <header>
-        <h1 className="text-2xl font-bold text-navy sm:text-3xl">Sectors</h1>
+        <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">Sectors</h1>
         <p className="mt-2 max-w-2xl text-muted">Choose a sector to edit its name, card summary, page text and areas of focus.</p>
       </header>
       <ul className="grid gap-4 md:grid-cols-2">

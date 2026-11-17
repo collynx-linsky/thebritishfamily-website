@@ -1,0 +1,1 @@
+ALTER TABLE "admin_users" ADD COLUMN "display_name" text DEFAULT 'Office' NOT NULL;
