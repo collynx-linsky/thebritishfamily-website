@@ -24,7 +24,15 @@ export const siteUrl = (
   (vercelProduction ? `https://${vercelProduction}` : "http://localhost:3000")
 ).replace(/\/$/, "");
 
-export const absoluteUrl = (path = "/") => `${siteUrl}${path === "/" ? "" : path}`;
+/**
+ * Search engines are kept out unless ALLOW_SEARCH_INDEXING is "true", so a
+ * draft or demo deployment can never be indexed by accident. Set it in the
+ * production environment when the real site launches. Read on the server
+ * (and by next.config.ts, which adds the matching X-Robots-Tag header).
+ */
+export const searchIndexingAllowed = process.env.ALLOW_SEARCH_INDEXING === "true";
+
+export const absoluteUrl =(path = "/") => `${siteUrl}${path === "/" ? "" : path}`;
 
 /** Shared by app/opengraph-image.tsx, app/twitter-image.tsx and pageMetadata. */
 export const shareImageSize = { width: 1200, height: 630 };

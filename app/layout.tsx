@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Inter } from "next/font/google";
 import { getCompany, getPages } from "@/lib/content/site-content";
-import { siteUrl } from "@/lib/seo";
+import { searchIndexingAllowed, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -39,6 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: { card: "summary_large_image" },
     formatDetection: { telephone: false, email: false, address: false },
+    // Draft and demo deployments stay out of search results (lib/seo.ts)
+    ...(searchIndexingAllowed ? {} : { robots: { index: false, follow: false } }),
   };
 }
 
