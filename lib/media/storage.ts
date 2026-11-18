@@ -28,11 +28,16 @@ const blobStorage: Storage = {
     const result = await put(pathname, body, {
       access: "public",
       contentType,
-      // Names are random already (lib/media/upload.ts); never overwrite
+      // Names are random already (lib/media/library.ts); never overwrite
       addRandomSuffix: false,
       allowOverwrite: false,
       // Files never change at the same address, so caches may keep them long
       cacheControlMaxAge: 60 * 60 * 24 * 365,
+    }).catch((error: unknown) => {
+      if (error instanceof Error && PRIVATE_STORE.test(error.message)) {
+        throw new UploadsNotConfiguredError("The website's file storage is set to private, so photos can't be shown to visitors. It needs a Blob store with public access.");
+      }
+      throw error;
     });
     return { url: result.url, pathname: result.pathname };
   },
@@ -63,10 +68,13 @@ const localDevStorage: Storage = {
 };
 
 export class UploadsNotConfiguredError extends Error {
-  constructor() {
-    super("Photo uploads are not set up yet: the website's file storage (Vercel Blob) still needs connecting.");
+  constructor(message = "Photo uploads are not set up yet: the website's file storage (Vercel Blob) still needs connecting.") {
+    super(message);
   }
 }
+
+/** A Blob store created as "private" cannot hold website photos, which every visitor loads. */
+const PRIVATE_STORE = /private access|private store/i;
 
 /** The storage to use now; throws in production when Blob is not connected. */
 export function getStorage(): Storage {
