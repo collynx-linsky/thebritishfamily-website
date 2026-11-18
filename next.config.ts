@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
     return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
   },
 
+  // Uploaded photos are stored in Vercel Blob (lib/media/storage.ts); allow
+  // next/image to optimise them. Only the media folder, only over HTTPS.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com", port: "", pathname: "/media/**", search: "" }],
+  },
+
   turbopack: {
     rules: {
       "*.css": {

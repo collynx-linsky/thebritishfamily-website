@@ -12,7 +12,7 @@
  * 4. on a database error serves the defaults (see lib/content/read.ts).
  */
 import "server-only";
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, eq, sql } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import { draftMode } from "next/headers";
 import { getDb, schema } from "../db";
@@ -30,6 +30,8 @@ export const TAGS = {
   leaders: "content:leaders",
   heroSlides: "content:hero-slides",
   gallery: "content:gallery",
+  /** Media library details used on public pages (focal points) */
+  media: "content:media",
 } as const;
 
 /** True when the database has been seeded (used to tell "empty" from "never set up"). */
@@ -48,19 +50,56 @@ const toImage = (row: { imageUrl: string; imageAlt: string; imageWidth: number; 
 });
 
 /* ------------------------------------------------------------------
+   Focal points from the media library
+   ------------------------------------------------------------------ */
+
+type FocalMap = Record<string, { x: number; y: number }>;
+
+/** Photos whose focal point is not the centre, by URL (one small cached query). */
+async function mediaFocals(): Promise<FocalMap> {
+  "use cache";
+  cacheTag(TAGS.media);
+  return readWithFallback("media focal points", () => ({}), async (db) => {
+    const rows = await db
+      .select({ url: schema.media.url, x: schema.media.focalX, y: schema.media.focalY })
+      .from(schema.media)
+      .where(sql`${schema.media.focalX} <> 50 or ${schema.media.focalY} <> 50`);
+    return Object.fromEntries(rows.map((r) => [r.url, { x: r.x, y: r.y }]));
+  });
+}
+
+/** Copy of `value` where every image (an object with a `src`) carries its focal point. */
+function withFocals<T>(value: T, focals: FocalMap): T {
+  if (!Object.keys(focals).length) return value;
+  const walk = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(walk);
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, child] of Object.entries(v)) out[k] = walk(child);
+      const src = (v as { src?: unknown }).src;
+      if (typeof src === "string" && focals[src]) out.focal = focals[src];
+      return out;
+    }
+    return v;
+  };
+  return walk(value) as T;
+}
+
+/* ------------------------------------------------------------------
    Sections
    ------------------------------------------------------------------ */
 
 async function readSection<K extends SectionKey>(key: K): Promise<SectionData[K]> {
   "use cache";
-  cacheTag(TAGS.section(key));
+  cacheTag(TAGS.section(key), TAGS.media);
+  const focals = await mediaFocals();
   // Live preview: an admin in Draft Mode sees their unsaved values. Draft
   // Mode re-runs this function per request without caching the result.
   if ((await draftMode()).isEnabled) {
     const draft = await readPreviewDraft(`section:${key}`);
-    if (draft) return parseSection(key, draft);
+    if (draft) return withFocals(parseSection(key, draft), focals);
   }
-  return readWithFallback(
+  const section = await readWithFallback(
     `section "${key}"`,
     () => sectionDefaults[key],
     async (db) => {
@@ -71,6 +110,7 @@ async function readSection<K extends SectionKey>(key: K): Promise<SectionData[K]
       return parseSection(key, row?.data);
     },
   );
+  return withFocals(section, focals);
 }
 
 export const getCompany = () => readSection("company");
@@ -90,7 +130,12 @@ export type { SectionData };
 
 export async function getSectors(): Promise<Sector[]> {
   "use cache";
-  cacheTag(TAGS.sectors);
+  cacheTag(TAGS.sectors, TAGS.media);
+  const focals = await mediaFocals();
+  return withFocals(await readSectors(), focals);
+}
+
+function readSectors(): Promise<Sector[]> {
   return readWithFallback("sectors", () => defaultSectors, async (db) => {
     const rows = await db.select().from(schema.sectors).orderBy(asc(schema.sectors.sortOrder));
     if (!rows.length) return defaultSectors;
@@ -120,7 +165,12 @@ export async function getSector(slug: string): Promise<Sector | undefined> {
 
 export async function getLeaders(): Promise<Leader[]> {
   "use cache";
-  cacheTag(TAGS.leaders);
+  cacheTag(TAGS.leaders, TAGS.media);
+  const focals = await mediaFocals();
+  return withFocals(await readLeaders(), focals);
+}
+
+function readLeaders(): Promise<Leader[]> {
   return readWithFallback("leaders", () => defaultLeaders, async (db) => {
     const rows = await db.select().from(schema.leaders).orderBy(asc(schema.leaders.sortOrder));
     if (!rows.length) return defaultLeaders;
@@ -142,11 +192,16 @@ export async function getLeaders(): Promise<Leader[]> {
 
 export async function getHeroSlides(): Promise<ImageAsset[]> {
   "use cache";
-  cacheTag(TAGS.heroSlides);
+  cacheTag(TAGS.heroSlides, TAGS.media);
+  const focals = await mediaFocals();
   if ((await draftMode()).isEnabled) {
     const draft = heroSlidesSchema.safeParse(await readPreviewDraft("hero_slides:all"));
-    if (draft.success) return draft.data.filter((s) => s.visible).map(({ src, alt, width, height }) => ({ src, alt, width, height }));
+    if (draft.success) return withFocals(draft.data.filter((s) => s.visible).map(({ src, alt, width, height }) => ({ src, alt, width, height })), focals);
   }
+  return withFocals(await readHeroSlides(), focals);
+}
+
+function readHeroSlides(): Promise<ImageAsset[]> {
   return readWithFallback("hero slides", () => defaultHeroSlides, async (db) => {
     const rows = (await db.select().from(schema.heroSlides).orderBy(asc(schema.heroSlides.sortOrder))).filter((r) => r.visible);
     return rows.length ? rows.map(toImage) : defaultHeroSlides;
@@ -167,7 +222,12 @@ const defaultGalleryItems = (): GalleryItem[] => {
 /** All gallery photos in order (Gallery page); filter showOnHome for the home carousel. */
 export async function getGallery(): Promise<GalleryItem[]> {
   "use cache";
-  cacheTag(TAGS.gallery);
+  cacheTag(TAGS.gallery, TAGS.media);
+  const focals = await mediaFocals();
+  return withFocals(await readGallery(), focals);
+}
+
+function readGallery(): Promise<GalleryItem[]> {
   return readWithFallback("gallery", defaultGalleryItems, async (db) => {
     const rows = await db.select().from(schema.galleryPhotos).orderBy(asc(schema.galleryPhotos.sortOrder));
     if (!rows.length && !(await isSeeded())) return defaultGalleryItems();

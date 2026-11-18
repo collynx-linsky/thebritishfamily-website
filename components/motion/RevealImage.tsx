@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ImageAsset } from "@/lib/site";
+import { focalStyle } from "@/lib/media/focal";
 
 /**
  * Photo in a rounded frame that is revealed by a navy wipe as it scrolls
@@ -40,7 +41,7 @@ export function RevealImage({
     >
       <div className={`absolute inset-0 ${parallax ? "parallax" : ""}`}>
         <Image
-          src={image.src}
+          src={image.src} style={focalStyle(image)}
           alt={decorative ? "" : image.alt}
           fill
           sizes={sizes}

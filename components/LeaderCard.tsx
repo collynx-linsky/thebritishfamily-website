@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { Leader } from "@/lib/site";
 import { EmailText } from "./EmailText";
 import { Icon } from "./Icon";
+import { focalStyle } from "@/lib/media/focal";
 
 /**
  * Director card. `compact` shows the short summary (home page);
@@ -28,7 +29,7 @@ export function LeaderCard({
         className={`relative shrink-0 overflow-hidden rounded-md bg-navy ${full ? "aspect-[4/5] w-full max-w-[220px]" : "aspect-[9/11] w-full max-w-[180px]"}`}
       >
         <Image
-          src={leader.photo.src}
+          src={leader.photo.src} style={focalStyle(leader.photo)}
           alt={leader.photo.alt}
           fill
           sizes={full ? "220px" : "180px"}

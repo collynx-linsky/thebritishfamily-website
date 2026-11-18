@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { sectorImage } from "@/lib/samples";
 import type { Sector } from "@/lib/site";
+import { focalStyle } from "@/lib/media/focal";
 
 /**
  * A sector's photo: the real one from lib/site.ts, or a temporary sample
@@ -30,7 +31,7 @@ export function SectorMedia({
 
   return (
     <Image
-      src={image.src}
+      src={image.src} style={focalStyle(image)}
       alt={image.alt}
       fill
       sizes={sizes}

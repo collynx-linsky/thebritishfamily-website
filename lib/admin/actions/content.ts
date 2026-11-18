@@ -35,6 +35,7 @@ import { fieldErrors, formToObject, overlay, type EditorResult, type FieldErrors
 import { heroSlidesSchema, leaderSchema, sectionSchemas, sectorSchema, type SlideItem } from "@/lib/content/sections";
 import type { SectionKey } from "@/lib/db/schema";
 import { refsFor, type EditorKey } from "@/lib/admin/editor-forms";
+import { getMedia, markMediaInUse, mediaUrlsIn } from "@/lib/media/library";
 
 /* ------------------------------------------------------------------
    Which entities each editor covers: see lib/admin/editor-forms.ts
@@ -106,6 +107,8 @@ async function commit(changes: Change[], session: AdminSession, form: EditorKey,
   const { href } = await describe(form, slug);
   const changed = await saveEntities(changes, { userId: session.userId, summary });
   await clearPreviewDrafts(changes.map((c) => c.ref));
+  // Uploads this content now uses are no longer abandoned (kept by the clean-up)
+  await markMediaInUse(mediaUrlsIn(changes.map((c) => c.value)));
   if (!changed.length) return changed;
   publish(changed);
   await recordActivity({ userId: session.userId, action, summary, href });
@@ -327,4 +330,29 @@ export async function deleteSlide(id: number): Promise<EditorResult> {
       return slides;
     }),
   );
+}
+
+/** Add a library photo to the end of the slideshow (sizes come from the library, not the browser). */
+export async function addSlide(mediaId: number, alt: string): Promise<EditorResult> {
+  return run(async (session) => {
+    const media = Number.isInteger(mediaId) ? await getMedia(mediaId) : null;
+    if (!media || media.kind !== "image" || !media.width || !media.height) throw new UnknownItemError();
+    return changeSlides(session, "Added a slideshow photo", (slides) => [
+      ...slides,
+      { src: media.url, alt: typeof alt === "string" ? alt : "", width: media.width!, height: media.height!, visible: true },
+    ]);
+  });
+}
+
+/** Put a different library photo in an existing slide (keeps its place and visibility). */
+export async function replaceSlidePhoto(id: number, mediaId: number, alt: string): Promise<EditorResult> {
+  return run(async (session) => {
+    const media = Number.isInteger(mediaId) ? await getMedia(mediaId) : null;
+    if (!media || media.kind !== "image" || !media.width || !media.height) throw new UnknownItemError();
+    return changeSlides(session, "Replaced a slideshow photo", (slides) => {
+      const slide = slides[findSlide(slides, id)];
+      Object.assign(slide, { src: media.url, width: media.width!, height: media.height!, alt: typeof alt === "string" ? alt : "" });
+      return slides;
+    });
+  });
 }

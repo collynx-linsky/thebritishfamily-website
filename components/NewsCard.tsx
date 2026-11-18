@@ -4,6 +4,7 @@ import { newsHref } from "@/lib/content/news";
 import { newsCategoryLabels, type NewsArticle } from "@/lib/content/types";
 import { formatDate } from "@/lib/format";
 import { Icon } from "./Icon";
+import { focalStyle } from "@/lib/media/focal";
 
 /**
  * News article card. The whole card is one link (stretched link), it lifts
@@ -28,7 +29,7 @@ export function NewsCard({
           className={`relative shrink-0 overflow-hidden bg-navy ${featured ? "aspect-16/10 md:aspect-auto md:w-[55%]" : "aspect-16/10"}`}
         >
           <Image
-            src={article.image.src}
+            src={article.image.src} style={focalStyle(article.image)}
             alt=""
             fill
             sizes={featured ? "(min-width: 768px) 640px, 100vw" : "(min-width: 1024px) 384px, (min-width: 640px) 50vw, 100vw"}

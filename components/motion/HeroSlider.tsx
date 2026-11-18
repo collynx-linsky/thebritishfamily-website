@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
 import type { ImageAsset } from "@/lib/site";
 import { Icon } from "../Icon";
+import { focalStyle } from "@/lib/media/focal";
 
 const SLIDE_MS = 6500;
 
@@ -86,7 +87,7 @@ export function HeroSlider({
             >
               <div className="hero-zoom absolute inset-0 will-change-transform">
                 <Image
-                  src={slide.src}
+                  src={slide.src} style={focalStyle(slide)}
                   alt={slide.alt}
                   fill
                   sizes="100vw"

@@ -29,6 +29,13 @@
       "when": 1794919020681,
       "tag": "0003_visible_flags_preview_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794995870242,
+      "tag": "0004_media_library",
+      "breakpoints": true
     }
   ]
 }

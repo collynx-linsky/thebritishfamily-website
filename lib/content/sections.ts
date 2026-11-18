@@ -48,8 +48,11 @@ export const imageRef = z.object({
     .trim()
     .refine((v) => v.startsWith("/images/") || v.startsWith("/dev-uploads/") || /^https:\/\/[a-z0-9.-]+\.public\.blob\.vercel-storage\.com\//i.test(v), "Upload an image."),
   alt: text(160),
-  width: z.int().positive(),
-  height: z.int().positive(),
+  // Coerced: image fields submit sizes as text
+  width: z.coerce.number().int().positive(),
+  height: z.coerce.number().int().positive(),
+  /** Added when read for the public site (from the media library); never stored */
+  focal: z.object({ x: z.number(), y: z.number() }).optional(),
 });
 export type ImageRef = z.infer<typeof imageRef>;
 

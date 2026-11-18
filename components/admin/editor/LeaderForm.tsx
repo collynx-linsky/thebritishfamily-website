@@ -4,7 +4,7 @@ import { restoreOriginal, saveLeader, undoLastChange } from "@/lib/admin/actions
 import { maxLengthAt } from "@/lib/admin/form-data";
 import { leaderSchema, type LeaderItem } from "@/lib/content/sections";
 import { EditorShell } from "./EditorShell";
-import { Group, ImageAltField, Row, TextField } from "./fields";
+import { Group, ImageField, Row, TextField } from "./fields";
 import type { EditorProps } from "./types";
 
 const m = (path: string) => maxLengthAt(leaderSchema, path);
@@ -37,8 +37,16 @@ export function LeaderForm({ slug, values: [leader], ...state }: EditorProps<[Le
         <TextField name="bio" label="Full biography" defaultValue={leader.bio} max={m("bio")} rows={8} hint="Shown on the Leadership page." />
       </Group>
 
-      <Group title="Portrait" description="Replacing the portrait arrives with photo uploads.">
-        <ImageAltField name="photo" label="Portrait description" image={leader.photo} max={m("photo.alt")} />
+      <Group icon="user" title="Portrait" description="Replace the portrait or edit its description. A plain background works best.">
+        <ImageField
+          name="photo"
+          label="Portrait description"
+          image={leader.photo}
+          max={m("photo.alt")}
+          recommended={{ width: 600, height: 750, shape: "portrait (4:5)" }}
+          where="Leadership page and the home page director card"
+          pickerTitle="Choose the portrait"
+        />
       </Group>
     </EditorShell>
   );

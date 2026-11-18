@@ -88,6 +88,7 @@ export function buildNavigation(input: {
     {
       label: "Media and news",
       entries: [
+        { href: "/admin/media", label: "Media library", icon: "image", keywords: ["photos", "pictures", "upload", "images", "files"] },
         { href: "/admin/gallery", label: "Gallery", icon: "image", keywords: ["photos", "pictures"], soon: true },
         { href: "/admin/news", label: "News", icon: "news", keywords: ["articles", "stories"], soon: true },
         { href: "/admin/downloads", label: "Downloads", icon: "download", keywords: ["documents", "pdf", "files", "profile"], soon: true },

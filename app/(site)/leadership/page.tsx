@@ -10,6 +10,7 @@ import { ArrowLink, ButtonLink, Container, Section, SectionHeading } from "@/com
 
 import { metadataForPage } from "@/lib/content/metadata";
 import { getAbout, getCompany, getLeaders, getPages } from "@/lib/content/site-content";
+import { focalStyle } from "@/lib/media/focal";
 
 export async function generateMetadata(): Promise<Metadata> {
   return metadataForPage("leadership", "/leadership");
@@ -60,7 +61,7 @@ export default async function LeadershipPage() {
                       />
                       <div className="relative aspect-4/5 overflow-hidden rounded-lg bg-navy shadow-lift">
                         <Image
-                          src={leader.photo.src}
+                          src={leader.photo.src} style={focalStyle(leader.photo)}
                           alt={leader.photo.alt}
                           fill
                           sizes="256px"
@@ -109,7 +110,7 @@ export default async function LeadershipPage() {
         >
           <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-20">
             <div className="parallax absolute inset-0">
-              <Image src={about.images.intro.src} alt="" fill sizes="100vw" className="object-cover" />
+              <Image src={about.images.intro.src} style={focalStyle(about.images.intro)} alt="" fill sizes="100vw" className="object-cover" />
             </div>
           </div>
           <div aria-hidden="true" className="absolute inset-0 -z-10 bg-navy/70" />

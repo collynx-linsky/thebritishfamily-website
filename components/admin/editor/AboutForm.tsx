@@ -4,18 +4,19 @@ import { restoreOriginal, saveAbout, undoLastChange } from "@/lib/admin/actions/
 import { maxLengthAt } from "@/lib/admin/form-data";
 import { aboutSchema, ICONS, type AboutSection } from "@/lib/content/sections";
 import { EditorShell } from "./EditorShell";
-import { Group, IconField, ImageAltField, ListField, Row, TextField } from "./fields";
+import { Group, IconField, ImageField, ListField, Row, TextField } from "./fields";
 import type { EditorProps } from "./types";
 
 const m = (path: string) => maxLengthAt(aboutSchema, path);
 
-const IMAGES: { key: keyof AboutSection["images"]; label: string }[] = [
-  { key: "intro", label: "About page: introduction photo" },
-  { key: "philosophy", label: "About page: philosophy photo" },
-  { key: "missionBackground", label: "About page: background behind mission and vision" },
-  { key: "approach", label: "About page: “How we work” photo" },
-  { key: "homeCollageTall", label: "Home page: tall photo in the about section" },
-  { key: "homeCollageSmall", label: "Home page: small photo in the about section" },
+const LANDSCAPE = { width: 1200, height: 900, shape: "landscape (4:3)" };
+const IMAGES: { key: keyof AboutSection["images"]; label: string; where: string; recommended: { width: number; height: number; shape: string } }[] = [
+  { key: "intro", label: "Introduction photo description", where: "About page, beside the introduction", recommended: LANDSCAPE },
+  { key: "philosophy", label: "Philosophy photo description", where: "About page, beside the philosophy", recommended: LANDSCAPE },
+  { key: "missionBackground", label: "Background photo description", where: "About page, faintly behind the mission and vision", recommended: { width: 1920, height: 1080, shape: "wide (16:9)" } },
+  { key: "approach", label: "“How we work” photo description", where: "About page, beside “How we work”", recommended: LANDSCAPE },
+  { key: "homeCollageTall", label: "Tall photo description", where: "Home page about section, the tall photo", recommended: { width: 800, height: 1200, shape: "portrait (2:3)" } },
+  { key: "homeCollageSmall", label: "Small photo description", where: "Home page about section, the small photo", recommended: { width: 900, height: 600, shape: "landscape (3:2)" } },
 ];
 
 export function AboutForm({ values: [about], ...state }: EditorProps<[AboutSection]>) {
@@ -103,9 +104,18 @@ export function AboutForm({ values: [about], ...state }: EditorProps<[AboutSecti
         />
       </Group>
 
-      <Group id="photos" title="Photos" description="Edit each photo's description. Replacing the photos themselves arrives with photo uploads." collapsible>
-        {IMAGES.map(({ key, label }) => (
-          <ImageAltField key={key} name={`images.${key}`} label={label} image={about.images[key]} max={m(`images.${key}.alt`)} />
+      <Group id="photos" icon="image" title="Photos" description="Replace a photo or edit its description. Photos are resized automatically." collapsible>
+        {IMAGES.map(({ key, label, where, recommended }) => (
+          <ImageField
+            key={key}
+            name={`images.${key}`}
+            label={label}
+            image={about.images[key]}
+            max={m(`images.${key}.alt`)}
+            recommended={recommended}
+            where={where}
+            pickerTitle="Choose a photo"
+          />
         ))}
       </Group>
     </EditorShell>

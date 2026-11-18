@@ -306,3 +306,43 @@ export const previewDrafts = pgTable("preview_drafts", {
   data: jsonb("data").notNull().$type<unknown>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * The media library: every uploaded file, reusable across the site.
+ *
+ * - "library": uploaded to the library (kept even when not used anywhere).
+ * - "pending": uploaded from an editor but not saved yet; removed (file and
+ *   row) by the clean-up job after 24 hours unless it gets used.
+ * Where a file is used is worked out from the content itself (by its URL),
+ * so it can never drift out of date. The focal point (percent from the left
+ * and top) decides how a photo is cropped in cards and banners everywhere.
+ */
+export const MEDIA_KINDS = ["image", "document"] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
+export const media = pgTable(
+  "media",
+  {
+    id: serial("id").primaryKey(),
+    url: text("url").notNull().unique(),
+    /** Storage key (Blob pathname, or the local development path) */
+    pathname: text("pathname").notNull(),
+    kind: text("kind").notNull().$type<MediaKind>(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    /** Description for visitors who can't see the photo (required before use) */
+    alt: text("alt").notNull().default(""),
+    focalX: integer("focal_x").notNull().default(50),
+    focalY: integer("focal_y").notNull().default(50),
+    /** Tiny blurred preview shown while the photo loads */
+    blurDataUrl: text("blur_data_url"),
+    /** The file's name on the uploader's device (shown in the library only) */
+    originalName: text("original_name").notNull().default(""),
+    status: text("status").notNull().default("library").$type<"library" | "pending">(),
+    createdBy: integer("created_by").references(() => adminUsers.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("media_status_created_idx").on(t.status, t.createdAt)],
+);

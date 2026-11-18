@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { LIST_MARKER } from "@/lib/admin/form-data";
 import { Icon } from "../../Icon";
+import { MediaPicker, type Recommended } from "../media/MediaPicker";
+import type { MediaRecord } from "@/lib/media/library";
 import type { IconName } from "@/lib/site";
 import { useFieldError, useFormChanged } from "./EditorShell";
 
@@ -388,42 +390,117 @@ export function ListField<T>({ name, label, description, initial, itemLabel, min
 }
 
 /* ------------------------------------------------------------------
-   Images (description only until uploads arrive)
+   Images
    ------------------------------------------------------------------ */
 
+type ImageValue = { src: string; alt: string; width: number; height: number };
+
 /**
- * A photo preview with its description (alt text). The file itself is kept
- * as stored; replacing it is done with uploads.
+ * A photo field: the current photo (in the shape it is shown on the site),
+ * "Replace photo" (upload or choose from the media library), and the
+ * description, which is required. Warns, without blocking, when a photo is
+ * smaller than the recommended size.
  */
-export function ImageAltField({
+export function ImageField({
   name,
   label,
   image,
+  sample,
   max,
-  keepSrc,
+  recommended,
+  where,
+  pickerTitle,
 }: {
   name: string;
+  /** Label of the description field */
   label: string;
-  image: { src: string; alt: string; width: number; height: number };
+  image: ImageValue | null;
+  /** Shown when there is no photo yet (for example a sector's sample photo) */
+  sample?: { src: string };
   max?: number;
-  /** Also submit the file address (lists that are matched by file) */
-  keepSrc?: boolean;
+  recommended: Recommended;
+  /** Where the photo appears, in everyday words */
+  where: string;
+  pickerTitle: string;
 }) {
+  const [chosen, setChosen] = useState<{ src: string; width: number; height: number } | null>(image ? { src: image.src, width: image.width, height: image.height } : null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pendingAlt = useRef<string | null>(null);
+  const changed = useFormChanged();
+  const altId = fieldId(`${name}.alt`);
+
+  // After a new photo is chosen: put its library description in the field
+  // (or clear it, so the old photo's description is not kept by mistake)
+  useEffect(() => {
+    if (pendingAlt.current === null) return;
+    const input = document.getElementById(altId) as HTMLInputElement | null;
+    const alt = pendingAlt.current;
+    pendingAlt.current = null;
+    if (input && input.value !== alt) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, alt);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    } else {
+      changed();
+    }
+  }, [chosen, altId, changed]);
+
+  const small = chosen && (chosen.width < recommended.width || chosen.height < recommended.height);
+  const shown = chosen?.src ?? sample?.src;
+
   return (
     <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-      <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-md bg-navy sm:w-40">
-        <Image src={image.src} alt="" fill sizes="(min-width: 640px) 160px, 100vw" className="object-cover" />
+      <div className="flex w-full shrink-0 flex-col gap-2 sm:w-48">
+        <div className="relative w-full overflow-hidden rounded-md bg-navy" style={{ aspectRatio: `${recommended.width} / ${recommended.height}` }}>
+          {shown ? <Image src={shown} alt="" fill sizes="(min-width: 640px) 192px, 100vw" className="object-cover" /> : null}
+          {!chosen && sample ? <span className="absolute inset-x-0 bottom-0 bg-ink/75 py-0.5 text-center text-[0.625rem] font-bold text-white uppercase">Sample photo</span> : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-navy/25 px-3 text-sm font-semibold text-navy hover:border-navy"
+        >
+          <Icon name="image" size={16} />
+          {chosen ? "Replace photo" : "Add a photo"}
+        </button>
       </div>
-      <div className="min-w-0 flex-1">
-        {keepSrc ? <input type="hidden" name={`${name}.src`} value={image.src} /> : null}
-        <TextField
-          name={`${name}.alt`}
-          label={label}
-          defaultValue={image.alt}
-          max={max}
-          hint="Describe what the photo shows, for visitors who can't see it and for search engines."
-        />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <p className="text-xs text-muted">
+          {where}. Best: {recommended.shape}, at least {recommended.width} × {recommended.height} pixels.
+          {chosen ? ` This photo: ${chosen.width} × ${chosen.height}.` : ""}
+        </p>
+        {small ? (
+          <p className="rounded-md bg-gold/10 px-3 py-2 text-xs font-medium text-amber-ink">
+            This photo is smaller than recommended, so it may look soft on large screens. It can still be used.
+          </p>
+        ) : null}
+        {chosen ? (
+          <>
+            <input type="hidden" name={`${name}.src`} value={chosen.src} />
+            <input type="hidden" name={`${name}.width`} value={chosen.width} />
+            <input type="hidden" name={`${name}.height`} value={chosen.height} />
+            <TextField
+              name={`${name}.alt`}
+              label={label}
+              defaultValue={image?.alt ?? ""}
+              max={max}
+              hint="Describe what the photo shows, for visitors who can't see it and for search engines."
+            />
+          </>
+        ) : (
+          <p className="text-sm text-muted">No photo of its own yet.</p>
+        )}
       </div>
+      <MediaPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title={pickerTitle}
+        recommended={recommended}
+        where={where}
+        onSelect={(media: MediaRecord) => {
+          pendingAlt.current = media.alt;
+          setChosen({ src: media.url, width: media.width ?? recommended.width, height: media.height ?? recommended.height });
+        }}
+      />
     </div>
   );
 }

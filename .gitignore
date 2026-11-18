@@ -44,3 +44,6 @@ next-env.d.ts
 # local responsive preview harness
 /public/_preview.html
 /public/_audit.js
+
+# Uploads stored on disk by the development-only storage (lib/media/storage.ts)
+/public/dev-uploads/

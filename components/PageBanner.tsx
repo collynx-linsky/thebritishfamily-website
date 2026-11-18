@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ImageAsset } from "@/lib/site";
 import { Icon } from "./Icon";
 import { Container } from "./ui";
+import { focalStyle } from "@/lib/media/focal";
 
 export type Crumb = { label: string; href?: string };
 
@@ -38,7 +39,7 @@ export function PageBanner({
       {image ? (
         <div aria-hidden="true" className="absolute inset-0 -z-30">
           <div className="parallax absolute inset-0">
-            <Image src={image.src} alt="" fill preload sizes="100vw" className="object-cover" />
+            <Image src={image.src} style={focalStyle(image)} alt="" fill preload sizes="100vw" className="object-cover" />
           </div>
         </div>
       ) : null}

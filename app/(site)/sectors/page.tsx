@@ -11,6 +11,7 @@ import { sectorImage, sectorPhotos } from "@/lib/samples";
 import { metadataForPage } from "@/lib/content/metadata";
 import { getPages, getSectors } from "@/lib/content/site-content";
 import { sectorHref } from "@/lib/site";
+import { focalStyle } from "@/lib/media/focal";
 
 export async function generateMetadata(): Promise<Metadata> {
   return metadataForPage("sectors", "/sectors");
@@ -41,7 +42,7 @@ export default async function SectorsPage() {
                   <a href={`#${sector.slug}`} className="group flex min-h-11 items-center gap-4 rounded-sm px-6">
                     <span className="relative size-14 shrink-0 overflow-hidden rounded-md ring-1 ring-white/15">
                       <Image
-                        src={sectorImage(sector).src}
+                        src={sectorImage(sector).src} style={focalStyle(sectorImage(sector))}
                         alt=""
                         fill
                         sizes="56px"

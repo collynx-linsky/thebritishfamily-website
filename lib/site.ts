@@ -51,6 +51,8 @@ export type ImageAsset = {
   width: number;
   height: number;
   alt: string;
+  /** Focal point from the media library (percent from left and top), for cropping */
+  focal?: { x: number; y: number };
 };
 
 export type Phone = {

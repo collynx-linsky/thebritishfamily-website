@@ -4,7 +4,7 @@ import { restoreOriginal, savePages, undoLastChange } from "@/lib/admin/actions/
 import { maxLengthAt } from "@/lib/admin/form-data";
 import { PAGE_KEYS, pagesSchema, type PageKey, type PagesSection } from "@/lib/content/sections";
 import { EditorShell } from "./EditorShell";
-import { Group, ImageAltField, TextField } from "./fields";
+import { Group, ImageField, TextField } from "./fields";
 import type { EditorProps } from "./types";
 import { pageSeoAnchor } from "@/lib/admin/navigation";
 import { SearchPreview } from "./SearchPreview";
@@ -50,7 +50,15 @@ export function PagesForm({ values: [pages], siteHost, companyName, ...state }: 
             <TextField name={`${key}.heading`} label="Heading" defaultValue={page.heading} max={m(`${key}.heading`)} rows={2} />
             <TextField name={`${key}.lead`} label="Text under the heading" defaultValue={page.lead} max={m(`${key}.lead`)} rows={3} />
             {page.bannerImage ? (
-              <ImageAltField name={`${key}.bannerImage`} label="Banner photo description" image={page.bannerImage} max={m(`${key}.bannerImage.alt`)} />
+              <ImageField
+                name={`${key}.bannerImage`}
+                label="Banner photo description"
+                image={page.bannerImage}
+                max={m(`${key}.bannerImage.alt`)}
+                recommended={{ width: 1920, height: 800, shape: "wide banner (12:5)" }}
+                where={`${label} page, behind the banner at the top`}
+                pickerTitle={`Choose the ${label} page banner`}
+              />
             ) : null}
             <h3 className="mt-2 text-sm font-bold tracking-wide text-muted uppercase">Search engines</h3>
             <TextField name={`${key}.title`} label="Title in search results" defaultValue={page.title} max={m(`${key}.title`)} hint={TITLE_HINT} />

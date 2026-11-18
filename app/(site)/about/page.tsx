@@ -11,6 +11,7 @@ import { ArrowLink, ButtonLink, Container, Eyebrow, Section, SectionHeading } fr
 import { metadataForPage } from "@/lib/content/metadata";
 import { getAbout, getCompany, getHome, getLeaders, getPages, getSectors } from "@/lib/content/site-content";
 import { sectorHref } from "@/lib/site";
+import { focalStyle } from "@/lib/media/focal";
 
 export async function generateMetadata(): Promise<Metadata> {
   return metadataForPage("about", "/about");
@@ -168,7 +169,7 @@ export default async function AboutPage() {
         >
           <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-35">
             <div className="parallax absolute inset-0">
-              <Image src={images.missionBackground.src} alt="" fill sizes="100vw" className="object-cover" />
+              <Image src={images.missionBackground.src} style={focalStyle(images.missionBackground)} alt="" fill sizes="100vw" className="object-cover" />
             </div>
           </div>
           <div aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-b from-navy/80 via-navy/65 to-navy/85" />

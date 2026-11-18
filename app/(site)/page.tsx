@@ -35,6 +35,7 @@ import {
   getSectors,
 } from "@/lib/content/site-content";
 import { sectorHref } from "@/lib/site";
+import { focalStyle } from "@/lib/media/focal";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -125,7 +126,7 @@ export default async function HomePage() {
               style={riseDelay(920)}
             >
               <Image
-                src={sectorImage(mining).src}
+                src={sectorImage(mining).src} style={focalStyle(sectorImage(mining))}
                 alt={sectorImage(mining).alt}
                 fill
                 sizes="(min-width: 1200px) 384px, (min-width: 768px) 33vw, 100vw"
@@ -168,7 +169,7 @@ export default async function HomePage() {
               >
                 <div className="parallax absolute inset-0">
                   <Image
-                    src={about.images.homeCollageTall.src}
+                    src={about.images.homeCollageTall.src} style={focalStyle(about.images.homeCollageTall)}
                     alt={about.images.homeCollageTall.alt}
                     fill
                     sizes="(min-width: 1024px) 300px, 58vw"
@@ -183,7 +184,7 @@ export default async function HomePage() {
               >
                 <div className="absolute inset-0">
                   <Image
-                    src={about.images.homeCollageSmall.src}
+                    src={about.images.homeCollageSmall.src} style={focalStyle(about.images.homeCollageSmall)}
                     alt={about.images.homeCollageSmall.alt}
                     fill
                     sizes="(min-width: 1024px) 260px, 50vw"
@@ -236,7 +237,7 @@ export default async function HomePage() {
                 <Link href="/leadership" className="group flex items-center gap-3 rounded-sm">
                   <span className="relative size-13 overflow-hidden rounded-full bg-navy ring-2 ring-transparent transition group-hover:ring-gold">
                     <Image
-                      src={managingDirector.photo.src}
+                      src={managingDirector.photo.src} style={focalStyle(managingDirector.photo)}
                       alt=""
                       fill
                       sizes="52px"
@@ -268,7 +269,7 @@ export default async function HomePage() {
                   >
                     <span className="relative size-16 shrink-0 overflow-hidden rounded-md ring-1 ring-white/15">
                       <Image
-                        src={sectorImage(sector).src}
+                        src={sectorImage(sector).src} style={focalStyle(sectorImage(sector))}
                         alt=""
                         fill
                         sizes="64px"
@@ -336,7 +337,7 @@ export default async function HomePage() {
                   <figure className="group flex flex-col gap-3">
                     <div className="relative aspect-4/3 overflow-hidden rounded-lg bg-navy shadow-card">
                       <Image
-                        src={item.image.src}
+                        src={item.image.src} style={focalStyle(item.image)}
                         alt={item.image.alt}
                         fill
                         sizes="(min-width: 640px) 384px, 80vw"
